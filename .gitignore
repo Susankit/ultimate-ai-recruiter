@@ -1,0 +1,9 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+node_modules/
+dist/
+data/candidates.jsonl.gz
+data/candidates.jsonl
