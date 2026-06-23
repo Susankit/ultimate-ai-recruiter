@@ -1,103 +1,52 @@
-Field Importance Analysis
+# Candidate Ranking Strategy
 
-High Importance Fields
+Total Score = 100
 
-These fields should have the greatest impact on candidate ranking.
+## 1. Semantic Fit (50%)
 
-Profile Summary
+Measure relevance to job description.
 
-Reason:
-Contains the candidate's overall experience, achievements, technologies, and domain expertise.
+Inputs:
 
-Skills
+- profile.summary
+- profile.headline
+- current_title
+- career_history.description
+- skills
 
-Reason:
-Directly matches job requirements.
+Method:
 
-Skill Proficiency
+Embedding similarity between candidate text and job description.
 
-Reason:
-Distinguishes beginners from experts.
-
-Skill Duration
-
-Reason:
-Measures actual experience with a skill.
-
-Years of Experience
-
-Reason:
-Useful for determining seniority.
-
-Current Title
-
-Reason:
-Indicates professional level and role alignment.
-
-Career History Description
-
-Reason:
-Provides evidence of real-world work and responsibilities.
-
-Skill Assessment Scores
-
-Reason:
-Represents verified technical competence.
+Weight: 50
 
 ---
 
-Medium Importance Fields
+## 2. Behavioral Reliability (30%)
 
-Certifications
+Measures candidate quality and responsiveness.
 
-Reason:
-Demonstrate additional learning and specialization.
+Inputs:
 
-Education
+- interview_completion_rate
+- recruiter_response_rate
+- offer_acceptance_rate
+- github_activity_score
+- skill_assessment_scores
 
-Reason:
-Provides background knowledge but should not dominate ranking.
-
-Recruiter Response Rate
-
-Reason:
-Measures responsiveness and engagement.
-
-GitHub Activity Score
-
-Reason:
-Useful for technical roles but not always available.
-
-Endorsements
-
-Reason:
-Can provide supporting evidence of expertise.
+Weight: 30
 
 ---
 
-Low Importance Fields
+## 3. Logistical Alignment (20%)
 
-Institution Tier
+Measures hiring practicality.
 
-Reason:
-Not always predictive of job performance.
+Inputs:
 
-Connection Count
+- preferred_work_mode
+- notice_period_days
+- willing_to_relocate
+- open_to_work_flag
 
-Reason:
-Measures networking rather than capability.
-
-Profile Views Received
-
-Reason:
-Popularity does not necessarily imply qualification.
-
-Languages
-
-Reason:
-Only important for specific roles.
-
-Current Company Size
-
-Reason:
-May provide context but should not strongly affect ranking.
+Weight: 20
