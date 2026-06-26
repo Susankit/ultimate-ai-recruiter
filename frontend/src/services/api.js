@@ -11,18 +11,19 @@ export const aiRecruiterAPI = {
       return { status: "offline", message: "Cannot reach backend server" };
     }
   },
-  
-  // Placeholder structure to trigger resume parsing later
-  submitMatch: async (resumeText, jobText) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/match`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resume: resumeText, job_description: jobText })
-      });
-      return await response.json();
-    } catch (error) {
-      return { error: "Failed to communicate with matching engine" };
-    }
+
+  // Upgraded Phase 5 Network Channel: Accepting Binary File Blobs via FormData
+  submitMatch: async (resumeFile, jobFile) => {
+    const formData = new FormData();
+    formData.append("resume_file", resumeFile);
+    formData.append("jd_file", jobFile);
+
+    // Note: We DO NOT set 'Content-Type' header manually here. 
+    // The browser automatically assigns multipart/form-data with the correct boundary token.
+    const response = await fetch(`${API_BASE_URL}/match`, {
+      method: "POST",
+      body: formData,
+    });
+    return await response.json();
   }
 };
