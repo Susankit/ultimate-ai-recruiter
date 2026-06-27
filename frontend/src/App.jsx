@@ -48,6 +48,7 @@ function App() {
     }
   };
 
+  // Front-end Live Client Filtering
   const filteredHistory = history.filter(item => 
     item.candidate_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.job_filename.toLowerCase().includes(searchTerm.toLowerCase())
@@ -106,7 +107,6 @@ function App() {
             <span className="text-xs font-mono text-slate-400 uppercase block mb-3">Bulk Candidates Staging Box</span>
             <label className="border-2 border-dashed border-slate-700 hover:border-blue-500 p-6 text-center cursor-pointer block text-sm text-slate-400 rounded-lg transition-all">
               {resumeBatch.length > 0 ? `📁 ${resumeBatch.length} Resumes In Queue` : "Select Multiple Resumes (PDF Only)"}
-              {/* Added multiple tags for batch execution */}
               <input type="file" accept=".pdf" multiple className="hidden" onChange={(e) => setResumeBatch(Array.from(e.target.files))} />
             </label>
             {resumeBatch.length > 0 && (
