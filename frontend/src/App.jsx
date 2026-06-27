@@ -3,10 +3,10 @@ import { aiRecruiterAPI } from './services/api';
 
 function App() {
   const [serverStatus, setServerStatus] = useState("Checking...");
-  const [resumeFile, setResumeFile] = useState(null);
+  const [resumeBatch, setResumeBatch] = useState([]); // Array format state for Phase 8 Bulk uploads
   const [jobFile, setJobFile] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
+  const [batchSummary, setBatchSummary] = useState(null);
   const [errorUI, setErrorUI] = useState(null);
   const [history, setHistory] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -24,30 +24,32 @@ function App() {
     refreshDataHub();
   }, []);
 
-  const handleMatchCalculation = async () => {
+  const handleBatchProcessingTrigger = async () => {
     setErrorUI(null);
-    if (!resumeFile || !jobFile) {
-      setErrorUI("Validation Error: Dono PDF files select karna mandatory hai.");
+    setBatchSummary(null);
+    if (resumeBatch.length === 0 || !jobFile) {
+      setErrorUI("Validation Error: Please select at least one Resume and a Job Description PDF.");
       return;
     }
     setLoading(true);
     try {
-      const response = await aiRecruiterAPI.submitMatch(resumeFile, jobFile);
+      const response = await aiRecruiterAPI.submitBatchMatch(resumeBatch, jobFile);
       if (response && response.status === "error") {
         setErrorUI(`Backend Error: ${response.message}`);
       } else {
-        setResult(response);
+        setBatchSummary(response);
+        setResumeBatch([]); // Clearing staging queue state upon success
         refreshDataHub();
       }
     } catch (err) {
-      setErrorUI("Network Error: Computation failed.");
+      setErrorUI("Network Error: Dynamic array batch processing matrix aborted.");
     } finally {
       setLoading(false);
     }
   };
 
   // Front-end Live Client Filtering
-  const filteredHistory = history.filter(item =>
+  const filteredHistory = history.filter(item => 
     item.candidate_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.job_filename.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -65,19 +67,25 @@ function App() {
         </div>
       </div>
 
-      {/* Main Panel */}
+      {/* Main Interface Wrapper */}
       <div className="flex-1 flex flex-col overflow-y-auto p-10 space-y-8">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-extrabold">Enterprise Analytics Hub</h1>
-            <p className="text-slate-400 text-sm">Phase 7: Real-time Stats aggregation & CSV Export</p>
+            <p className="text-slate-400 text-sm">Phase 8: Tokenized Parallel Embedding Batch Engine</p>
           </div>
-          <button onClick={handleMatchCalculation} disabled={loading} className="bg-blue-600 hover:bg-blue-500 font-bold px-6 py-3 rounded-lg transition-all text-sm">
-            {loading ? "Processing..." : "Run AI Matrix"}
+          <button onClick={handleBatchProcessingTrigger} disabled={loading} className="bg-blue-600 hover:bg-blue-500 font-bold px-6 py-3 rounded-lg transition-all text-sm">
+            {loading ? "Processing Batch Matrix..." : "Execute Bulk Match"}
           </button>
         </div>
 
-        {/* Phase 7 Feature: Top Analytics Cards */}
+        {errorUI && (
+          <div className="bg-red-950/60 border border-red-800 text-red-300 p-4 rounded-xl text-xs font-mono">
+            {errorUI}
+          </div>
+        )}
+
+        {/* Telemetry Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-slate-900 p-5 rounded-xl border border-slate-800">
             <span className="text-slate-500 text-xs font-mono block uppercase">Total Scanned Candidates</span>
@@ -93,45 +101,59 @@ function App() {
           </div>
         </div>
 
-        {/* File Input Boxes */}
+        {/* Multi-File Core File Drop Controllers */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
-            <label className="border-2 border-dashed border-slate-700 p-4 text-center cursor-pointer block text-sm text-slate-400 rounded-lg">
-              {resumeFile ? `📄 ${resumeFile.name}` : "Upload Resume PDF"}
-              <input type="file" accept=".pdf" className="hidden" onChange={(e) => setResumeFile(e.target.files[0])} />
+          <div className="bg-slate-900 p-5 rounded-xl border border-slate-800">
+            <span className="text-xs font-mono text-slate-400 uppercase block mb-3">Bulk Candidates Staging Box</span>
+            <label className="border-2 border-dashed border-slate-700 hover:border-blue-500 p-6 text-center cursor-pointer block text-sm text-slate-400 rounded-lg transition-all">
+              {resumeBatch.length > 0 ? `📁 ${resumeBatch.length} Resumes In Queue` : "Select Multiple Resumes (PDF Only)"}
+              <input type="file" accept=".pdf" multiple className="hidden" onChange={(e) => setResumeBatch(Array.from(e.target.files))} />
             </label>
+            {resumeBatch.length > 0 && (
+              <div className="mt-3 space-y-1 max-h-24 overflow-y-auto bg-slate-950 p-2 rounded border border-slate-800/60 font-mono text-[10px] text-slate-400">
+                {resumeBatch.map((f, i) => <div key={i} className="truncate">✓ {f.name}</div>)}
+              </div>
+            )}
           </div>
-          <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
-            <label className="border-2 border-dashed border-slate-700 p-4 text-center cursor-pointer block text-sm text-slate-400 rounded-lg">
-              {jobFile ? `📄 ${jobFile.name}` : "Upload Job Description PDF"}
-              <input type="file" accept=".pdf" className="hidden" onChange={(e) => setJobFile(e.target.files[0])} />
-            </label>
+
+          <div className="bg-slate-900 p-5 rounded-xl border border-slate-800 flex flex-col justify-between">
+            <div>
+              <span className="text-xs font-mono text-slate-400 uppercase block mb-3">Target Profile Bounds</span>
+              <label className="border-2 border-dashed border-slate-700 hover:border-emerald-500 p-6 text-center cursor-pointer block text-sm text-slate-400 rounded-lg transition-all">
+                {jobFile ? `📄 ${jobFile.name}` : "Upload Role Matrix Sheet (PDF)"}
+                <input type="file" accept=".pdf" className="hidden" onChange={(e) => setJobFile(e.target.files[0])} />
+              </label>
+            </div>
           </div>
         </div>
 
-        {/* Live Result Feedback */}
-        {result && (
-          <div className="bg-slate-900 p-5 rounded-xl border border-blue-900/40 font-mono text-xs">
-            <span className="text-blue-400 font-bold block mb-2">LIVE PROCESSING COMPLETED:</span>
-            <div>Match Score: <span className="text-emerald-400 font-bold">{(result.match_score * 100).toFixed(1)}%</span></div>
+        {/* Phase 8 Live Processing Summary Tracker Banner */}
+        {batchSummary && (
+          <div className="bg-slate-900 border border-emerald-900/60 p-5 rounded-xl font-mono text-xs">
+            <span className="text-emerald-400 font-bold block mb-2">🎉 BATCH TRANSACTION COMPLETED:</span>
+            <div className="text-slate-400 mb-3">Processed Count: <span className="text-white font-bold">{batchSummary.processed_count} Candidates</span></div>
+            <div className="space-y-1 max-h-32 overflow-y-auto bg-slate-950 p-3 rounded border border-slate-800">
+              {batchSummary.results.map((res, i) => (
+                <div key={i} className="flex justify-between border-b border-slate-900 pb-1 text-slate-300">
+                  <span>{res.candidate}</span>
+                  <span className="text-emerald-400 font-bold">{(res.score * 100).toFixed(1)}%</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
-        {/* Ledger Table with Search & Export features */}
+        {/* Historical Log Grid */}
         <div className="bg-slate-900 p-6 rounded-xl border border-slate-800">
           <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
-            <input
-              type="text"
-              placeholder="🔍 Search candidate name or document..."
+            <input 
+              type="text" 
+              placeholder="🔍 Live filter data rows..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-sm w-full sm:w-72 focus:outline-none focus:border-blue-500"
             />
-            <a
-              href="http://127.0.0.1:8000/api/export"
-              download
-              className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition-all flex items-center gap-2"
-            >
+            <a href="http://127.0.0.1:8000/api/export" download className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition-all flex items-center gap-2">
               📥 Export Database to CSV
             </a>
           </div>
