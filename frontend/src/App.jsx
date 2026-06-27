@@ -13,13 +13,18 @@ function App() {
   const [analytics, setAnalytics] = useState({ total_matches: 0, avg_score: 0, highest_score: 0 });
 
   const refreshDataHub = () => {
-    aiRecruiterAPI.fetchHistory().then(data => setHistory(data || []));
-    aiRecruiterAPI.fetchAnalytics().then(data => setAnalytics(data));
+    aiRecruiterAPI.fetchHistory()
+      .then(data => setHistory(Array.isArray(data) ? data : []))
+      .catch(() => setHistory([]));
+
+    aiRecruiterAPI.fetchAnalytics()
+      .then(data => setAnalytics(data || { total_matches: 0, avg_score: 0, highest_score: 0 }))
+      .catch(() => setAnalytics({ total_matches: 0, avg_score: 0, highest_score: 0 }));
   };
 
   useEffect(() => {
     aiRecruiterAPI.checkHealth()
-      .then(data => setServerStatus(data.status === "healthy" ? "CONNECTED ✅" : "OFFLINE ❌"))
+      .then(data => setServerStatus(data?.status === "healthy" ? "CONNECTED ✅" : "OFFLINE ❌"))
       .catch(() => setServerStatus("OFFLINE ❌"));
     refreshDataHub();
   }, []);
@@ -34,8 +39,8 @@ function App() {
     setLoading(true);
     try {
       const response = await aiRecruiterAPI.submitBatchMatch(resumeBatch, jobFile);
-      if (response && response.status === "error") {
-        setErrorUI(`Backend Error: ${response.message}`);
+      if (response && (response.status === "error" || response.error)) {
+        setErrorUI(`Backend Error: ${response.message || response.error}`);
       } else {
         setBatchSummary(response);
         setResumeBatch([]); // Clearing staging queue state upon success
@@ -48,11 +53,15 @@ function App() {
     }
   };
 
-  // Front-end Live Client Filtering
-  const filteredHistory = history.filter(item => 
-    item.candidate_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.job_filename.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Safe Front-end Live Client Filtering to prevent .toLowerCase() crashes
+  const filteredHistory = Array.isArray(history)
+    ? history.filter(item => {
+      const name = item?.candidate_name || "";
+      const jobFile = item?.job_filename || "";
+      return name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        jobFile.toLowerCase().includes(searchTerm.toLowerCase());
+    })
+    : [];
 
   return (
     <div className="flex h-screen bg-slate-950 text-slate-100 font-sans overflow-hidden">
@@ -89,15 +98,19 @@ function App() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-slate-900 p-5 rounded-xl border border-slate-800">
             <span className="text-slate-500 text-xs font-mono block uppercase">Total Scanned Candidates</span>
-            <span className="text-3xl font-black text-blue-400">{analytics.total_matches}</span>
+            <span className="text-3xl font-black text-blue-400">{analytics?.total_matches || 0}</span>
           </div>
           <div className="bg-slate-900 p-5 rounded-xl border border-slate-800">
             <span className="text-slate-500 text-xs font-mono block uppercase">Average Alignment Rating</span>
-            <span className="text-3xl font-black text-amber-400">{(analytics.avg_score * 100).toFixed(1)}%</span>
+            <span className="text-3xl font-black text-amber-400">
+              {analytics?.avg_score ? (analytics.avg_score * 100).toFixed(1) : "0.0"}%
+            </span>
           </div>
           <div className="bg-slate-900 p-5 rounded-xl border border-slate-800">
             <span className="text-slate-500 text-xs font-mono block uppercase">Highest System Peak</span>
-            <span className="text-3xl font-black text-emerald-400">{(analytics.highest_score * 100).toFixed(1)}%</span>
+            <span className="text-3xl font-black text-emerald-400">
+              {analytics?.highest_score ? (analytics.highest_score * 100).toFixed(1) : "0.0"}%
+            </span>
           </div>
         </div>
 
@@ -127,18 +140,31 @@ function App() {
           </div>
         </div>
 
-        {/* Phase 8 Live Processing Summary Tracker Banner */}
+        {/* Safe Render Engine for Batch Transaction Summary */}
         {batchSummary && (
           <div className="bg-slate-900 border border-emerald-900/60 p-5 rounded-xl font-mono text-xs">
             <span className="text-emerald-400 font-bold block mb-2">🎉 BATCH TRANSACTION COMPLETED:</span>
-            <div className="text-slate-400 mb-3">Processed Count: <span className="text-white font-bold">{batchSummary.processed_count} Candidates</span></div>
+            <div className="text-slate-400 mb-3">
+              Processed Count: <span className="text-white font-bold">{batchSummary?.processed_count || batchSummary?.results?.length || 0} Candidates</span>
+            </div>
             <div className="space-y-1 max-h-32 overflow-y-auto bg-slate-950 p-3 rounded border border-slate-800">
-              {batchSummary.results.map((res, i) => (
-                <div key={i} className="flex justify-between border-b border-slate-900 pb-1 text-slate-300">
-                  <span>{res.candidate}</span>
-                  <span className="text-emerald-400 font-bold">{(res.score * 100).toFixed(1)}%</span>
-                </div>
-              ))}
+              {Array.isArray(batchSummary?.results) ? (
+                batchSummary.results.map((res, i) => (
+                  <div key={i} className="flex justify-between border-b border-slate-900 pb-1 text-slate-300">
+                    <span>{res?.candidate || "Unknown"}</span>
+                    <span className="text-emerald-400 font-bold">{res?.score ? (res.score * 100).toFixed(1) : "0.0"}%</span>
+                  </div>
+                ))
+              ) : Array.isArray(batchSummary) ? (
+                batchSummary.map((res, i) => (
+                  <div key={i} className="flex justify-between border-b border-slate-900 pb-1 text-slate-300">
+                    <span>{res?.candidate || res?.candidate_name || "Unknown"}</span>
+                    <span className="text-emerald-400 font-bold">{res?.score ? (res.score * 100).toFixed(1) : "0.0"}%</span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-slate-500 italic">No direct matrix breakdown available.</div>
+              )}
             </div>
           </div>
         )}
@@ -146,9 +172,9 @@ function App() {
         {/* Historical Log Grid */}
         <div className="bg-slate-900 p-6 rounded-xl border border-slate-800">
           <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
-            <input 
-              type="text" 
-              placeholder="🔍 Live filter data rows..." 
+            <input
+              type="text"
+              placeholder="🔍 Live filter data rows..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-sm w-full sm:w-72 focus:outline-none focus:border-blue-500"
@@ -172,12 +198,12 @@ function App() {
                 {filteredHistory.length > 0 ? (
                   filteredHistory.map((row, idx) => (
                     <tr key={idx} className="hover:bg-slate-950/40">
-                      <td className="py-3 px-4 text-blue-400 font-bold">{row.candidate_name}</td>
-                      <td className="py-3 px-4 text-slate-400">{row.candidate_email}</td>
-                      <td className="py-3 px-4 truncate max-w-xs">{row.job_filename}</td>
+                      <td className="py-3 px-4 text-blue-400 font-bold">{row?.candidate_name || "N/A"}</td>
+                      <td className="py-3 px-4 text-slate-400">{row?.candidate_email || "N/A"}</td>
+                      <td className="py-3 px-4 truncate max-w-xs">{row?.job_filename || "N/A"}</td>
                       <td className="py-3 px-4 text-center">
                         <span className="bg-slate-950 px-2 py-0.5 rounded text-emerald-400 font-bold">
-                          {(row.score * 100).toFixed(1)}%
+                          {row?.score ? (row.score * 100).toFixed(1) : "0.0"}%
                         </span>
                       </td>
                     </tr>
