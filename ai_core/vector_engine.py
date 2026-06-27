@@ -15,25 +15,20 @@ class LocalVectorMatcher:
             "node.js", "mongodb", "docker", "aws", "git", "machine learning"
         ]
 
-    # Phase 7 Feature: Hybrid Penalty & Reward System for Core Mathematical Weights
     def apply_advanced_weight_adjustments(self, resume_text: str, jd_text: str, base_score: float) -> float:
-        """Adjusts semantic score based on hard keyword intersections or structural absences."""
         adjusted_score = base_score
         cleaned_resume = resume_text.lower()
         cleaned_jd = jd_text.lower()
 
-        # 1. Critical Seniority Guardrail: If job asks for 'senior/lead' but candidate has only junior traits
         if any(word in cleaned_jd for word in ["senior", "lead", "manager"]) and any(word in cleaned_resume for word in ["junior", "intern", "fresher"]):
-            adjusted_score -= 0.12 # Deduct 12% for architectural hierarchy gap
+            adjusted_score -= 0.12 
 
-        # 2. Key Hard Skill Reward Intersection
         matched_keywords_count = 0
         for skill in self.skill_vocabulary:
             pattern = r'\b' + re.escape(skill) + r'\b'
             if re.search(pattern, cleaned_jd) and re.search(pattern, cleaned_resume):
                 matched_keywords_count += 1
 
-        # If more than 3 target skills intersect, give a 5% optimization reward
         if matched_keywords_count >= 3:
             adjusted_score += 0.05
 
@@ -71,6 +66,16 @@ class LocalVectorMatcher:
         if not sanitized or len(sanitized.split()) < 2: return np.zeros((384,))
         try: return self.model.encode(sanitized)
         except Exception: return np.zeros((384,))
+
+    # Phase 8 Feature: Native Batch Matrix Encoding Optimization
+    def compute_embeddings_batch(self, raw_texts_list: list):
+        """Encodes a batch of texts simultaneously leveraging matrix pipelining."""
+        cleaned_list = [self.clean_text(text) for text in raw_texts_list]
+        try:
+            # Passing the entire array directly to sentence-transformers for fast vectorization
+            return self.model.encode(cleaned_list, batch_size=4, show_progress_bar=False)
+        except Exception:
+            return [np.zeros((384,)) for _ in raw_texts_list]
 
     def calculate_similarity(self, vector_a, vector_b):
         if vector_a.shape != (384,) or vector_b.shape != (384,): return 0.0
