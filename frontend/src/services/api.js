@@ -8,7 +8,7 @@ export const aiRecruiterAPI = {
       return await response.json();
     } catch (error) {
       return { status: "offline", message: "Cannot reach backend server" };
-    }
+    }   
   },
 
   // 2. Single Match (Phase 6)
