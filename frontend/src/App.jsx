@@ -3,7 +3,7 @@ import { aiRecruiterAPI } from './services/api';
 
 function App() {
   const [serverStatus, setServerStatus] = useState("Checking...");
-  const [resumeBatch, setResumeBatch] = useState([]); 
+  const [resumeBatch, setResumeBatch] = useState([]); // Array format state for Phase 8 Bulk uploads
   const [jobFile, setJobFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [batchSummary, setBatchSummary] = useState(null);
@@ -11,16 +11,12 @@ function App() {
   const [history, setHistory] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [analytics, setAnalytics] = useState({ total_matches: 0, avg_score: 0, highest_score: 0 });
-  
-  // 🔥 Phase 9 States
-  const [selectedInsight, setSelectedInsight] = useState(null);
-  const [insightLoading, setInsightLoading] = useState(false);
 
   const refreshDataHub = () => {
     aiRecruiterAPI.fetchHistory()
       .then(data => setHistory(Array.isArray(data) ? data : []))
       .catch(() => setHistory([]));
-      
+
     aiRecruiterAPI.fetchAnalytics()
       .then(data => setAnalytics(data || { total_matches: 0, avg_score: 0, highest_score: 0 }))
       .catch(() => setAnalytics({ total_matches: 0, avg_score: 0, highest_score: 0 }));
@@ -47,7 +43,7 @@ function App() {
         setErrorUI(`Backend Error: ${response.message || response.error}`);
       } else {
         setBatchSummary(response);
-        setResumeBatch([]); 
+        setResumeBatch([]); // Clearing staging queue state upon success
         refreshDataHub();
       }
     } catch (err) {
@@ -57,33 +53,18 @@ function App() {
     }
   };
 
-  // 🔥 Phase 9 Trigger Insight Fetch Engine
-  const handleRowClickEngine = async (candidateName) => {
-    setInsightLoading(true);
-    setSelectedInsight(null);
-    try {
-      const data = await aiRecruiterAPI.fetchCandidateInsights(candidateName);
-      if(!data.error) {
-        setSelectedInsight(data);
-      }
-    } catch(e) {
-      console.error("Insight loading broken.");
-    } finally {
-      setInsightLoading(false);
-    }
-  };
-
-  const filteredHistory = Array.isArray(history) 
+  // Safe Front-end Live Client Filtering to prevent .toLowerCase() crashes
+  const filteredHistory = Array.isArray(history)
     ? history.filter(item => {
-        const name = item?.candidate_name || "";
-        const jobFile = item?.job_filename || "";
-        return name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-               jobFile.toLowerCase().includes(searchTerm.toLowerCase());
-      })
+      const name = item?.candidate_name || "";
+      const jobFile = item?.job_filename || "";
+      return name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        jobFile.toLowerCase().includes(searchTerm.toLowerCase());
+    })
     : [];
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-100 font-sans overflow-hidden relative">
+    <div className="flex h-screen bg-slate-950 text-slate-100 font-sans overflow-hidden">
       {/* Sidebar */}
       <div className="w-64 bg-slate-900 border-r border-slate-800 p-6 flex flex-col justify-between hidden md:flex">
         <div>
@@ -100,10 +81,10 @@ function App() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-extrabold">Enterprise Analytics Hub</h1>
-            <p className="text-slate-400 text-sm">Phase 9: AI Evaluation Insights Matrix</p>
+            <p className="text-slate-400 text-sm">Phase 8: Tokenized Parallel Embedding Batch Engine</p>
           </div>
           <button onClick={handleBatchProcessingTrigger} disabled={loading} className="bg-blue-600 hover:bg-blue-500 font-bold px-6 py-3 rounded-lg transition-all text-sm">
-            {loading ? "Processing..." : "Execute Bulk Match"}
+            {loading ? "Processing Batch Matrix..." : "Execute Bulk Match"}
           </button>
         </div>
 
@@ -133,7 +114,7 @@ function App() {
           </div>
         </div>
 
-        {/* File Drop Inputs */}
+        {/* Multi-File Core File Drop Controllers */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-slate-900 p-5 rounded-xl border border-slate-800">
             <span className="text-xs font-mono text-slate-400 uppercase block mb-3">Bulk Candidates Staging Box</span>
@@ -141,6 +122,11 @@ function App() {
               {resumeBatch.length > 0 ? `📁 ${resumeBatch.length} Resumes In Queue` : "Select Multiple Resumes (PDF Only)"}
               <input type="file" accept=".pdf" multiple className="hidden" onChange={(e) => setResumeBatch(Array.from(e.target.files))} />
             </label>
+            {resumeBatch.length > 0 && (
+              <div className="mt-3 space-y-1 max-h-24 overflow-y-auto bg-slate-950 p-2 rounded border border-slate-800/60 font-mono text-[10px] text-slate-400">
+                {resumeBatch.map((f, i) => <div key={i} className="truncate">✓ {f.name}</div>)}
+              </div>
+            )}
           </div>
 
           <div className="bg-slate-900 p-5 rounded-xl border border-slate-800 flex flex-col justify-between">
@@ -154,23 +140,55 @@ function App() {
           </div>
         </div>
 
+        {/* Safe Render Engine for Batch Transaction Summary */}
+        {batchSummary && (
+          <div className="bg-slate-900 border border-emerald-900/60 p-5 rounded-xl font-mono text-xs">
+            <span className="text-emerald-400 font-bold block mb-2">🎉 BATCH TRANSACTION COMPLETED:</span>
+            <div className="text-slate-400 mb-3">
+              Processed Count: <span className="text-white font-bold">{batchSummary?.processed_count || batchSummary?.results?.length || 0} Candidates</span>
+            </div>
+            <div className="space-y-1 max-h-32 overflow-y-auto bg-slate-950 p-3 rounded border border-slate-800">
+              {Array.isArray(batchSummary?.results) ? (
+                batchSummary.results.map((res, i) => (
+                  <div key={i} className="flex justify-between border-b border-slate-900 pb-1 text-slate-300">
+                    <span>{res?.candidate || "Unknown"}</span>
+                    <span className="text-emerald-400 font-bold">{res?.score ? (res.score * 100).toFixed(1) : "0.0"}%</span>
+                  </div>
+                ))
+              ) : Array.isArray(batchSummary) ? (
+                batchSummary.map((res, i) => (
+                  <div key={i} className="flex justify-between border-b border-slate-900 pb-1 text-slate-300">
+                    <span>{res?.candidate || res?.candidate_name || "Unknown"}</span>
+                    <span className="text-emerald-400 font-bold">{res?.score ? (res.score * 100).toFixed(1) : "0.0"}%</span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-slate-500 italic">No direct matrix breakdown available.</div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Historical Log Grid */}
         <div className="bg-slate-900 p-6 rounded-xl border border-slate-800">
-          <div className="mb-4">
-            <input 
-              type="text" 
-              placeholder="🔍 Search files or names..." 
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+            <input
+              type="text"
+              placeholder="🔍 Live filter data rows..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-sm w-full sm:w-72 focus:outline-none focus:border-blue-500"
             />
+            <a href="http://127.0.0.1:8000/api/export" download className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition-all flex items-center gap-2">
+              📥 Export Database to CSV
+            </a>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs font-mono">
               <thead className="bg-slate-950 text-slate-500 uppercase border-b border-slate-800">
                 <tr>
-                  <th className="py-3 px-4">Candidate Identity (Click for Insights)</th>
+                  <th className="py-3 px-4">Candidate Identity</th>
                   <th className="py-3 px-4">Contact Mapping</th>
                   <th className="py-3 px-4">Target Job File</th>
                   <th className="py-3 px-4 text-center">AI Rating</th>
@@ -179,27 +197,20 @@ function App() {
               <tbody className="divide-y divide-slate-800/40">
                 {filteredHistory.length > 0 ? (
                   filteredHistory.map((row, idx) => (
-                    <tr 
-                      key={idx} 
-                      onClick={() => handleRowClickEngine(row?.candidate_name || "Unknown Candidate")}
-                      className="hover:bg-blue-950/20 cursor-pointer transition-all border-l-2 border-transparent hover:border-blue-500"
-                    >
-                      <td className="py-3 px-4 text-blue-400 font-bold">👤 {row?.candidate_name || "Unknown Candidate"}</td>
+                    <tr key={idx} className="hover:bg-slate-950/40">
+                      <td className="py-3 px-4 text-blue-400 font-bold">{row?.candidate_name || "N/A"}</td>
                       <td className="py-3 px-4 text-slate-400">{row?.candidate_email || "N/A"}</td>
                       <td className="py-3 px-4 truncate max-w-xs">{row?.job_filename || "N/A"}</td>
                       <td className="py-3 px-4 text-center">
                         <span className="bg-slate-950 px-2 py-0.5 rounded text-emerald-400 font-bold">
-                          {row?.score ? (row.score * 100).toFixed(1) : "66.1"}%
+                          {row?.score ? (row.score * 100).toFixed(1) : "0.0"}%
                         </span>
                       </td>
                     </tr>
                   ))
                 ) : (
-                  <tr onClick={() => handleRowClickEngine("Rahul Verma")}>
-                    <td className="py-3 px-4 text-blue-400 font-bold">👤 Rahul Verma (Click Mock Test)</td>
-                    <td className="py-3 px-4 text-slate-400">rahul@example.com</td>
-                    <td className="py-3 px-4">job_description.pdf</td>
-                    <td className="py-3 px-4 text-center"><span className="text-emerald-400 font-bold">66.1%</span></td>
+                  <tr>
+                    <td colSpan="4" className="py-6 text-center text-slate-600 italic">No corresponding records found.</td>
                   </tr>
                 )}
               </tbody>
@@ -207,58 +218,6 @@ function App() {
           </div>
         </div>
       </div>
-
-      {/* 🔥 PHASE 9: ADVANCED AI INSIGHT DRAWER MODAL OVERLAY */}
-      {insightLoading && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50">
-          <div className="bg-slate-900 border border-slate-800 px-6 py-4 rounded-xl font-mono text-sm">
-            ⚡ Decrypting Neural Alignment Parameters...
-          </div>
-        </div>
-      )}
-
-      {selectedInsight && (
-        <div className="fixed inset-y-0 right-0 w-full sm:w-[450px] bg-slate-900 border-l border-slate-800 shadow-2xl p-8 z-50 overflow-y-auto transform transition-transform duration-300">
-          <div className="flex justify-between items-center border-b border-slate-800 pb-4 mb-6">
-            <div>
-              <h3 className="text-lg font-black text-blue-400 uppercase tracking-wider">AI Insight Matrix</h3>
-              <p className="text-xs text-slate-400">{selectedInsight.candidate}</p>
-            </div>
-            <button 
-              onClick={() => setSelectedInsight(null)}
-              className="text-slate-400 hover:text-white font-bold font-mono border border-slate-700 px-2 py-1 rounded bg-slate-950 text-xs"
-            >
-              [CLOSE]
-            </button>
-          </div>
-
-          <div className="space-y-6 font-mono text-xs">
-            {/* Core Strengths */}
-            <div>
-              <span className="text-emerald-400 font-bold uppercase block mb-2">🟢 Core Strengths</span>
-              <ul className="space-y-1.5 list-disc list-inside text-slate-300">
-                {selectedInsight.strengths?.map((s, i) => <li key={i}>{s}</li>)}
-              </ul>
-            </div>
-
-            {/* Gap Analysis */}
-            <div>
-              <span className="text-amber-400 font-bold uppercase block mb-2">🟡 Identified Tech Gaps</span>
-              <ul className="space-y-1.5 list-disc list-inside text-slate-300">
-                {selectedInsight.gaps?.map((g, i) => <li key={i}>{g}</li>)}
-              </ul>
-            </div>
-
-            {/* Tailored Interview Questions */}
-            <div className="bg-slate-950 p-4 rounded-lg border border-slate-800/60">
-              <span className="text-blue-400 font-bold uppercase block mb-2">🤖 Recommended Tech Questions</span>
-              <ol className="space-y-2 list-decimal list-inside text-slate-400 italic">
-                {selectedInsight.interview_questions?.map((q, i) => <li key={i} className="pl-1">"{q}"</li>)}
-              </ol>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
