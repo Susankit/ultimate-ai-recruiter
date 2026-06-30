@@ -14,7 +14,7 @@ class AIEvaluationEngine:
     @staticmethod
     def generate_candidate_insights(resume_text: str, jd_text: str) -> CandidateInsightsSchema:
         """
-        100% OFFLINE LOCAL ENGINE - Zero Internet, Zero API Keys, Zero Cost.
+        100% OFFLINE LOCAL ENGINE - Phase 10 Core Tokenizer
         """
         if not resume_text or not jd_text:
             return CandidateInsightsSchema(
@@ -25,7 +25,6 @@ class AIEvaluationEngine:
                 interview_questions=["Could you introduce your core tech stack?"]
             )
 
-        # Local Skill Knowledge Graph for Offline Analysis
         tech_vault = {
             "fastapi": "How do you manage background tasks and dependency injections locally in FastAPI?",
             "react": "Explain the lifecycle hooks and virtual DOM tracking optimization patterns in React.",
@@ -42,7 +41,6 @@ class AIEvaluationEngine:
         missing_skills = []
         custom_questions = []
 
-        # Parse and match keywords locally using regex boundaries
         for skill, question in tech_vault.items():
             in_jd = re.search(r'\b' + re.escape(skill) + r'\b', jd_lower)
             in_resume = re.search(r'\b' + re.escape(skill) + r'\b', resume_lower)
@@ -54,7 +52,6 @@ class AIEvaluationEngine:
                     missing_skills.append(skill.upper())
                     custom_questions.append(question)
 
-        # Local mathematical ratio calculation
         total_demands = len(matched_skills) + len(missing_skills)
         ratio = len(matched_skills) / total_demands if total_demands > 0 else 0.5
 
@@ -63,7 +60,7 @@ class AIEvaluationEngine:
             pitch = f"Strong structural alignment. Core local proficiencies verified in: {', '.join(matched_skills[:3])}."
         elif ratio >= 0.40:
             status = "FURTHER_REVIEW"
-            pitch = f"Foundational match parameters met. Good grip on {', '.join(matched_skills[:2]) if matched_skills else 'general specs'}, but requires validation in {', '.join(missing_skills[:2]) if missing_skills else 'core components'}."
+            pitch = f"Foundational match parameters met. Good grip on {', '.join(matched_skills[:2]) if matched_skills else 'general specs'}."
         else:
             status = "REJECT"
             pitch = "Critical infrastructure skill mismatch detected via local matrix processing rules."
@@ -78,3 +75,14 @@ class AIEvaluationEngine:
             gaps=[f"Lacks explicit project logs for {m} setup." for m in missing_skills[:3]] or ["No major skill gaps identified."],
             interview_questions=custom_questions[:2]
         )
+
+    @staticmethod
+    def calculate_local_deviation(candidate_score: float, system_avg: float) -> str:
+        """Phase 10: Compares candidate score against local DB metrics dynamically."""
+        diff = candidate_score - system_avg
+        if diff > 0.10:
+            return f"Outperforming system average by +{round(diff * 100, 1)}%. Highly recommended asset."
+        elif diff < -0.10:
+            return f"Underperforming system average by {round(diff * 100, 1)}%. Requires structural upskilling."
+        else:
+            return "Perfectly aligned with current local pool baseline standard."
