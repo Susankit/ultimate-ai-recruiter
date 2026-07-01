@@ -27,10 +27,20 @@ export const aiRecruiterAPI = {
       return await response.json();
     } catch { return null; }
   },
-  // 🔥 FETCH CANDIDATE INSIGHTS FROM LOCAL ENGINE
   fetchCandidateInsights: async (candidateName) => {
     const response = await fetch(`${API_BASE_URL}/insights/${encodeURIComponent(candidateName)}`);
     if (!response.ok) throw new Error("Local extraction failure.");
     return await response.json();
-  }
+  },
+  // 🔥 PHASE 10 NEW: SAVE NOTES & FLAG
+  updateCandidateStatus: async (candidateName, notes, isFlagged) => {
+    const response = await fetch(`${API_BASE_URL}/candidates/status`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ candidate_name: candidateName, notes, is_flagged: isFlagged ? 1 : 0 })
+    });
+    return await response.json();
+  },
+  // 🔥 PHASE 10 NEW: GET EXPORT URL LINK
+  getExportUrl: () => `${API_BASE_URL}/export/csv`
 };
