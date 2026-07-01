@@ -2,17 +2,17 @@
 import os
 import random
 import sqlite3
+import io
 from typing import List
 from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-
-# Member C ke offline engine ko import kiya
 from ai_engine import AIEvaluationEngine
 
 DB_FILE = "recruiter_matrix.db"
 
-def init_db():
+def init_db_phase10():
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("""
@@ -27,12 +27,21 @@ def init_db():
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    # Auto-Migration logic for Phase 10
+    try:
+        cursor.execute("ALTER TABLE candidate_matches ADD COLUMN notes TEXT DEFAULT ''")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    try:
+        cursor.execute("ALTER TABLE candidate_matches ADD COLUMN is_flagged INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
     conn.commit()
     conn.close()
 
-init_db()
+init_db_phase10()
 
-app = FastAPI(title="Offline AI Recruiter Engine", version="9.0")
+app = FastAPI(title="Offline AI Recruiter Engine", version="10.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -42,10 +51,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class AnalyticsSummary(BaseModel):
-    total_matches: int
-    avg_score: float
-    highest_score: float
+class StatusUpdateRequest(BaseModel):
+    candidate_name: str
+    notes: str
+    is_flagged: int
 
 class InsightReport(BaseModel):
     candidate: str
@@ -54,64 +63,34 @@ class InsightReport(BaseModel):
     strengths: List[str]
     gaps: List[str]
     interview_questions: List[str]
+    notes: str
+    is_flagged: int
+    pool_benchmark: str
 
 @app.get("/api/health")
 async def health_check():
-    return {"status": "healthy", "mode": "100% Offline Matrix Operational"}
-
-@app.post("/api/match")
-async def single_match(resume_file: UploadFile = File(...), jd_file: UploadFile = File(...)):
-    try:
-        clean_name = resume_file.filename.replace(".pdf", "").replace("_", " ").title()
-        email = f"{clean_name.lower().replace(' ', '')}@offline.local"
-        score = round(random.uniform(0.60, 0.95), 4)
-
-        resume_text = f"Candidate Profile: {clean_name}. Handled local scripts with Python, FastAPI routing, and custom React hook interfaces."
-        jd_text = f"Target Blueprint Spec for {jd_file.filename}. Demands engineering fluency in Python web layers, FastAPI engines, and structured React UI state dashboards."
-
-        conn = sqlite3.connect(DB_FILE)
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO candidate_matches (candidate_name, candidate_email, job_filename, score, resume_text, jd_text)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (clean_name, email, jd_file.filename, score, resume_text, jd_text))
-        conn.commit()
-        conn.close()
-
-        return {"status": "success", "candidate": clean_name, "score": score}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return {"status": "healthy", "mode": "Phase 10 Enterprise Local Active"}
 
 @app.post("/api/batch-match")
 async def batch_match(resume_files: List[UploadFile] = File(...), jd_file: UploadFile = File(...)):
     if not resume_files:
-        raise HTTPException(status_code=400, detail="Batch queue is empty.")
-    
+        raise HTTPException(status_code=400, detail="Batch queue empty.")
     results = []
     try:
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
-        
         for resume in resume_files:
             name = resume.filename.replace(".pdf", "").replace("Resume_", "").replace("_", " ").title()
             email = f"{name.lower().replace(' ', '')}@firm.local"
+            score = round(random.uniform(0.85, 0.96), 4) if "ankit" in resume.filename.lower() else round(random.uniform(0.35, 0.75), 4)
+            r_text = f"Developer {name}. Competent in python scripts, fastapi setups, and react interface renderers."
+            j_text = f"Blueprint: {jd_file.filename}. Requires web engineering layers with python, fastapi data blocks, and react states."
             
-            if "ankit" in resume.filename.lower() or "high" in resume.filename.lower():
-                score = round(random.uniform(0.85, 0.96), 4)
-                r_text = f"Senior Stack Engineer {name}. Expert mastery in building asynchronous web endpoints with FastAPI, managing complex local SQLite transactional files, and structuring layout components with React."
-            else:
-                score = round(random.uniform(0.25, 0.55), 4)
-                r_text = f"Junior Scriptwriter {name}. Baseline operational awareness of classic JavaScript functions and legacy software documentation parameters."
-
-            j_text = f"Role Profile Sheet: {jd_file.filename}. Demands deep operational capacity across Python systems, FastAPI network layers, SQLite databases, and structured React controls."
-
             cursor.execute("""
-                INSERT INTO candidate_matches (candidate_name, candidate_email, job_filename, score, resume_text, jd_text)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO candidate_matches (candidate_name, candidate_email, job_filename, score, resume_text, jd_text, notes, is_flagged)
+                VALUES (?, ?, ?, ?, ?, ?, '', 0)
             """, (name, email, jd_file.filename, score, r_text, j_text))
-            
             results.append({"candidate": name, "score": score, "status": "Processed"})
-            
         conn.commit()
         conn.close()
         return {"status": "completed", "results": results}
@@ -124,55 +103,99 @@ async def fetch_history_ledger():
         conn = sqlite3.connect(DB_FILE)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        cursor.execute("SELECT candidate_name, candidate_email, job_filename, score FROM candidate_matches ORDER BY id DESC")
+        cursor.execute("SELECT candidate_name, candidate_email, job_filename, score, is_flagged FROM candidate_matches ORDER BY id DESC")
         rows = cursor.fetchall()
         conn.close()
         return [dict(row) for row in rows]
     except Exception as e:
         return []
 
-@app.get("/api/analytics", response_model=AnalyticsSummary)
+@app.get("/api/analytics")
 async def fetch_analytics_matrix():
-    try:
-        conn = sqlite3.connect(DB_FILE)
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*), AVG(score), MAX(score) FROM candidate_matches")
-        count, avg, highest = cursor.fetchone()
-        conn.close()
-        return {
-            "total_matches": count or 0,
-            "avg_score": round(avg, 4) if avg else 0.0,
-            "highest_score": round(highest, 4) if highest else 0.0
-        }
-    except Exception as e:
-        return {"total_matches": 0, "avg_score": 0.0, "highest_score": 0.0}
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*), AVG(score), MAX(score) FROM candidate_matches")
+    count, avg, highest = cursor.fetchone()
+    conn.close()
+    return {
+        "total_matches": count or 0,
+        "avg_score": round(avg, 4) if avg else 0.0,
+        "highest_score": round(highest, 4) if highest else 0.0
+    }
 
-# 🔥 NEW LOCAL INSIGHTS ENDPOINT (Phase 9 Bridge)
 @app.get("/api/insights/{candidate_name}", response_model=InsightReport)
 async def get_candidate_insights(candidate_name: str):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT resume_text, jd_text, notes, is_flagged, score FROM candidate_matches 
+        WHERE candidate_name = ? ORDER BY id DESC LIMIT 1
+    """, (candidate_name,))
+    row = cursor.fetchone()
+    
+    # Get overall pool average for Member C's benchmark logic
+    cursor.execute("SELECT AVG(score) FROM candidate_matches")
+    avg_score = cursor.fetchone()[0] or 0.65
+    conn.close()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Candidate matrix records not found.")
+
+    r_text, j_text, notes, is_flagged, c_score = row
+    report = AIEvaluationEngine.generate_candidate_insights(r_text, j_text)
+    deviation_comment = AIEvaluationEngine.calculate_local_deviation(c_score, avg_score)
+    
+    return {
+        "candidate": candidate_name,
+        "status": report.recommendation_status,
+        "pitch": report.one_line_pitch,
+        "strengths": report.strengths,
+        "gaps": report.gaps,
+        "interview_questions": report.interview_questions,
+        "notes": notes or "",
+        "is_flagged": is_flagged or 0,
+        "pool_benchmark": deviation_comment
+    }
+
+# 🔥 NEW ENDPOINT: UPDATE NOTES AND FLAG STATUS
+@app.put("/api/candidates/status")
+async def update_candidate_status(payload: StatusUpdateRequest):
     try:
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT resume_text, jd_text FROM candidate_matches 
-            WHERE candidate_name = ? ORDER BY id DESC LIMIT 1
-        """, (candidate_name,))
-        row = cursor.fetchone()
+            UPDATE candidate_matches 
+            SET notes = ?, is_flagged = ? 
+            WHERE candidate_name = ?
+        """, (payload.notes, payload.is_flagged, payload.candidate_name))
+        conn.commit()
+        conn.close()
+        return {"status": "success", "message": f"Updated state metrics for {payload.candidate_name}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# 🔥 NEW ENDPOINT: STREAM ENTIRE SQLITE DATABASE TO CSV FILE
+@app.get("/api/export/csv")
+async def export_database_to_csv():
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, candidate_name, candidate_email, job_filename, score, is_flagged, notes FROM candidate_matches")
+        rows = cursor.fetchall()
         conn.close()
 
-        r_text = row[0] if row and row[0] else f"Profile logs for {candidate_name}"
-        j_text = row[1] if row and row[1] else "General deployment metrics"
-
-        # Direct local function call, no API network request
-        report = AIEvaluationEngine.generate_candidate_insights(r_text, j_text)
+        output = io.StringIO()
+        output.write("ID,Candidate Name,Email,Job Blueprint File,Matching Score,Flagged Status,Recruiter Decision Notes\n")
+        for row in rows:
+            flag_text = "REVIEW_FLAGGED" if row[5] == 1 else "STANDARD"
+            clean_note = row[6].replace("\n", " ").replace(",", ";") if row[6] else ""
+            output.write(f'{row[0]},{row[1]},{row[2]},{row[3]},{round(row[4]*100,2)}%,{flag_text},{clean_note}\n')
         
-        return {
-            "candidate": candidate_name,
-            "status": report.recommendation_status,
-            "pitch": report.one_line_pitch,
-            "strengths": report.strengths,
-            "gaps": report.gaps,
-            "interview_questions": report.interview_questions
-        }
+        output.seek(0)
+        return StreamingResponse(
+            io.BytesIO(output.getvalue().encode("utf-8")),
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=local_recruiter_phase10_report.csv"}
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
