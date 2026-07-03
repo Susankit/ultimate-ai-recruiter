@@ -4,14 +4,14 @@ import { aiRecruiterAPI } from './services/api';
 
 function App() {
   const [serverStatus, setServerStatus] = useState("Checking...");
-  const [resumeBatch, setResumeBatch] = useState([]); 
+  const [resumeBatch, setResumeBatch] = useState([]);
   const [jobFile, setJobFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorUI, setErrorUI] = useState(null);
   const [history, setHistory] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [analytics, setAnalytics] = useState({ total_matches: 0, avg_score: 0, highest_score: 0 });
-  
+
   const [selectedInsight, setSelectedInsight] = useState(null);
   const [insightLoading, setInsightLoading] = useState(false);
   const [localNotes, setLocalNotes] = useState("");
@@ -42,7 +42,7 @@ function App() {
   };
 
   const handleWipeHistoryTrigger = async () => {
-    if(!window.confirm("Are you sure you want to clear old ranks and start fresh?")) return;
+    if (!window.confirm("Are you sure you want to clear old ranks and start fresh?")) return;
     try {
       await aiRecruiterAPI.clearHistory();
       setSelectedInsight(null);
@@ -84,10 +84,10 @@ function App() {
           <h2 className="text-xl font-bold tracking-wider text-blue-400 mb-4">LOCAL RECRUITER</h2>
           <div className="bg-slate-800 px-4 py-2 rounded-lg font-medium text-xs text-slate-300">Phase 10: Score Rank Engine</div>
           <a href={aiRecruiterAPI.getExportUrl()} download className="block text-center bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black py-2 rounded text-xs tracking-wide transition-all">
-            📥 EXPORT CSV REPORT
+            EXPORT CSV REPORT
           </a>
           <button onClick={handleWipeHistoryTrigger} className="w-full bg-red-950/60 border border-red-900/60 text-red-400 hover:bg-red-900 hover:text-white font-bold py-2 rounded text-xs transition-all">
-            🗑️ WIPE DATA / FRESH START
+            RESTART
           </button>
         </div>
         <div className="text-xs text-slate-500 bg-slate-950 p-3 rounded border border-slate-800">
@@ -122,10 +122,10 @@ function App() {
           <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
             <input type="text" placeholder="🔍 Filter rows..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-sm w-full sm:w-64 focus:outline-none focus:border-blue-500" />
             <button onClick={handleBatchProcessingTrigger} disabled={loading} className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-lg text-xs transition-all ml-auto">
-              {loading ? "Ranking..." : "⚡ Execute Score Sorting Match"}
+              {loading ? "Ranking..." : " Execute Score Sorting Match"}
             </button>
           </div>
-          
+
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs font-mono">
               <thead className="bg-slate-950 text-slate-500 border-b border-slate-800">
@@ -184,9 +184,9 @@ function App() {
 
             {/* Benchmark Text box */}
             <div className="bg-blue-950/20 border border-blue-900/40 p-3 rounded-lg text-blue-300 leading-relaxed">
-              <strong>📊 Benchmark Check:</strong> {selectedInsight.pool_benchmark}
+              <strong> Benchmark Check:</strong> {selectedInsight.pool_benchmark}
             </div>
-            
+
             {/* Explanatory One-line Pitch */}
             <div className="bg-slate-950 border border-slate-800 p-4 rounded-lg">
               <span className="text-slate-500 block text-[10px] font-bold uppercase mb-2">📋 Summary Pitch</span>
@@ -221,7 +221,7 @@ function App() {
               </label>
               <textarea value={localNotes} onChange={(e) => setLocalNotes(e.target.value)} placeholder="Type private review notes here... (e.g. Needs frontend UI review)" className="w-full h-20 bg-slate-900 border border-slate-800 rounded p-2 text-slate-200 focus:outline-none focus:border-blue-500 text-xs" />
               <button onClick={handleSaveStatusState} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded text-xs tracking-wider transition-all shadow-md">
-                💾 SAVE AND PERSIST CHANGES
+                SAVE AND PERSIST CHANGES
               </button>
             </div>
           </div>
