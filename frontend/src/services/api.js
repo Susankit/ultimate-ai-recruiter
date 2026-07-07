@@ -1,40 +1,56 @@
 // frontend/src/services/api.js
-const API_BASE_URL = "http://127.0.0.1:8000/api";
+import axios from 'axios';
+
+const API_BASE_URL = 'http://localhost:8000/api';
 
 export const aiRecruiterAPI = {
   checkHealth: async () => {
-    try { const response = await fetch(`${API_BASE_URL}/health`); return await response.json(); } catch { return { status: "offline" }; }
+    try { const r = await axios.get(`${API_BASE_URL}/health`); return r.data; } 
+    catch { return { status: "offline" }; }
   },
-  submitBatchMatch: async (resumeFiles, jobFile) => {
+
+  submitBatchMatch: async (resumes, jdFile) => {
     const formData = new FormData();
-    resumeFiles.forEach(file => formData.append("resume_files", file));
-    formData.append("jd_file", jobFile);
-    const response = await fetch(`${API_BASE_URL}/batch-match`, { method: "POST", body: formData });
-    return await response.json();
-  },
-  fetchHistory: async () => {
-    try { const response = await fetch(`${API_BASE_URL}/history`); return await response.json(); } catch { return []; }
-  },
-  fetchAnalytics: async () => {
-    try { const response = await fetch(`${API_BASE_URL}/analytics`); return await response.json(); } catch { return null; }
-  },
-  fetchCandidateInsights: async (candidateName) => {
-    const response = await fetch(`${API_BASE_URL}/insights/${encodeURIComponent(candidateName)}`);
-    if (!response.ok) throw new Error("Local extraction failure.");
-    return await response.json();
-  },
-  updateCandidateStatus: async (candidateName, notes, isFlagged) => {
-    const response = await fetch(`${API_BASE_URL}/candidates/status`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ candidate_name: candidateName, notes, is_flagged: isFlagged ? 1 : 0 })
+    resumes.forEach(f => formData.append("resume_files", f));
+    formData.append("jd_file", jdFile);
+    const r = await axios.post(`${API_BASE_URL}/batch-match`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
     });
-    return await response.json();
+    return r.data;
   },
-  // 🔥 NEW API TRIGGER FOR PURGE
+
+  fetchHistory: async (w) => {
+    try {
+      const q = `w_sem=${w.w_sem}&w_exp=${w.w_exp}&w_ski=${w.w_ski}&w_proj=${w.w_proj}&w_beh=${w.w_beh}`;
+      const r = await axios.get(`${API_BASE_URL}/history?${q}`);
+      return r.data;
+    } catch { return []; }
+  },
+
+  fetchAnalytics: async () => {
+    try { const r = await axios.get(`${API_BASE_URL}/analytics`); return r.data; } 
+    catch { return null; }
+  },
+
+  fetchCandidateInsights: async (name, w) => {
+    const q = `w_sem=${w.w_sem}&w_exp=${w.w_exp}&w_ski=${w.w_ski}&w_proj=${w.w_proj}&w_beh=${w.w_beh}`;
+    const r = await axios.get(`${API_BASE_URL}/insights/${encodeURIComponent(name)}?${q}`);
+    return r.data;
+  },
+
+  updateCandidateStatus: async (name, notes, isFlagged) => {
+    const r = await axios.put(`${API_BASE_URL}/candidates/status`, {
+      candidate_name: name,
+      notes: notes,
+      is_flagged: isFlagged ? 1 : 0
+    });
+    return r.data;
+  },
+
   clearHistory: async () => {
-    const response = await fetch(`${API_BASE_URL}/clear-history`, { method: "POST" });
-    return await response.json();
+    const r = await axios.post(`${API_BASE_URL}/clear-history`);
+    return r.data;
   },
+
   getExportUrl: () => `${API_BASE_URL}/export/csv`
 };
