@@ -1,76 +1,89 @@
 // frontend/src/App.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AppContext } from './context/AppContext';
 import { aiRecruiterAPI } from './services/api';
+import { 
+  Briefcase, 
+  Sliders, 
+  Sun, 
+  Moon, 
+  UploadCloud, 
+  Search, 
+  FileText, 
+  Download, 
+  Trash2, 
+  AlertTriangle, 
+  CheckCircle, 
+  CheckSquare, 
+  Square,
+  HelpCircle,
+  TrendingUp
+} from 'lucide-react';
 
 function App() {
-  const [serverStatus, setServerStatus] = useState("Checking...");
-  const [resumeBatch, setResumeBatch] = useState([]); 
+  const { 
+    theme, 
+    currentScreen, 
+    setCurrentScreen, 
+    weights, 
+    toggleGlobalTheme, 
+    updateWeightParameter 
+  } = useContext(AppContext);
+
+  const [resumeBatch, setResumeBatch] = useState([]);
   const [jobFile, setJobFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorUI, setErrorUI] = useState(null);
   const [history, setHistory] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [analytics, setAnalytics] = useState({ total_matches: 0, avg_score: 0, highest_score: 0 });
-  
-  // 5-Parameter Sliders Customization Control Panel Matrix States
-  const [weights, setWeights] = useState({
-    w_sem: 30,
-    w_exp: 20,
-    w_ski: 20,
-    w_proj: 20,
-    w_beh: 10
-  });
+  const [analytics, setAnalytics] = useState({ total_matches: 0 });
 
   const [selectedInsight, setSelectedInsight] = useState(null);
   const [insightLoading, setInsightLoading] = useState(false);
   const [localNotes, setLocalNotes] = useState("");
   const [isFlagged, setIsFlagged] = useState(false);
 
-  const handleSliderAdjustment = (parameter, targetValue) => {
-    setWeights(prev => ({
-      ...prev,
-      [parameter]: parseFloat(targetValue)
-    }));
-  };
-
   const refreshDataHub = () => {
     aiRecruiterAPI.fetchHistory(weights).then(data => setHistory(Array.isArray(data) ? data : []));
     aiRecruiterAPI.fetchAnalytics().then(data => data && setAnalytics(data));
   };
 
-  // Automatically refresh ranks whenever any of the 5 sliders are adjusted by the recruiter
   useEffect(() => {
     refreshDataHub();
   }, [weights]);
 
   useEffect(() => {
-    aiRecruiterAPI.checkHealth().then(d => setServerStatus(d?.status === "healthy" ? "CONNECTED ✅" : "OFFLINE ❌"));
     refreshDataHub();
   }, []);
 
   const handleBatchProcessingTrigger = async () => {
     setErrorUI(null);
     if (resumeBatch.length === 0 || !jobFile) {
-      setErrorUI("Validation Error: Please select both resumes and a JD sheet.");
+      setErrorUI("Please stage both candidate logs and matching specifications profile sheet.");
       return;
     }
     setLoading(true);
     try {
       await aiRecruiterAPI.submitBatchMatch(resumeBatch, jobFile);
-      setResumeBatch([]); 
-      alert("Batch dispatched into background async processing pool!");
-      setTimeout(() => { refreshDataHub(); }, 2500);
-    } catch { setErrorUI("Network Error: Local backend processing aborted."); }
-    finally { setLoading(false); }
+      setResumeBatch([]);
+      alert("Batch dispatched into background async vector pools!");
+      setTimeout(() => { refreshDataHub(); }, 2000);
+    } catch {
+      setErrorUI("Network Fault: Connection termination on internal local endpoints pipeline.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleWipeHistoryTrigger = async () => {
-    if(!window.confirm("Are you sure you want to clear old ranks and start fresh?")) return;
+    if (!window.confirm("Confirm initialization wipe of old records history ledger?")) return;
     try {
       await aiRecruiterAPI.clearHistory();
       setSelectedInsight(null);
       refreshDataHub();
-    } catch { alert("Failed to purge database."); }
+    } catch {
+      alert("Purge runtime failure encountered.");
+    }
   };
 
   const handleRowClickEngine = async (candidateName) => {
@@ -80,8 +93,11 @@ function App() {
       setSelectedInsight(data);
       setLocalNotes(data.notes || "");
       setIsFlagged(data.is_flagged === 1);
-    } catch { alert("Failed to fetch evaluation layout metrics."); }
-    finally { setInsightLoading(false); }
+    } catch {
+      alert("Error linking profile diagnostic records context blocks.");
+    } finally {
+      setInsightLoading(false);
+    }
   };
 
   const handleSaveStatusState = async () => {
@@ -90,193 +106,327 @@ function App() {
       await aiRecruiterAPI.updateCandidateStatus(selectedInsight.candidate, localNotes, isFlagged);
       refreshDataHub();
       setSelectedInsight(prev => ({ ...prev, notes: localNotes, is_flagged: isFlagged ? 1 : 0 }));
-      alert("Changes saved to local database.");
-    } catch { alert("Error saving parameters."); }
+      alert("Audit decision successfully synchronized with backend database.");
+    } catch {
+      alert("Error saving record configurations.");
+    }
   };
 
-  const processedHistory = history.filter(item => 
+  const processedHistory = history.filter(item =>
     (item?.candidate_name || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalWeightBubble = weights.w_sem + weights.w_exp + weights.w_ski + weights.w_proj + weights.w_beh;
 
+  // Thematic Dynamic System Classes Resolver Matrix mapping variables
+  const containerClass = theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-white text-slate-900';
+  const sidebarClass = theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200';
+  const elementCardClass = theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-slate-50 border-slate-200 text-slate-900';
+  const inputControlClass = theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-900';
+  const tableHeaderClass = theme === 'dark' ? 'bg-slate-950 text-slate-400 border-slate-800' : 'bg-slate-200 text-slate-600 border-slate-300';
+  const tableRowClass = theme === 'dark' ? 'hover:bg-slate-800/50 border-slate-800/60' : 'hover:bg-slate-100/70 border-slate-200';
+
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-100 font-sans overflow-hidden relative">
-      {/* Sidebar Controls Panel Frame */}
-      <div className="w-72 bg-slate-900 border-r border-slate-800 p-6 flex flex-col justify-between hidden lg:flex overflow-y-auto">
-        <div className="space-y-6">
+    <div className={`flex h-screen w-screen overflow-hidden text-base ${containerClass}`}>
+      
+      {/* 🧭 LEFT SIDEBAR INTERFACE: Clean Single Action Navigation Controls Router */}
+      <div className={`w-80 flex flex-col justify-between border-r p-7 ${sidebarClass}`}>
+        <div className="space-y-10">
           <div>
-            <h2 className="text-xl font-bold tracking-wider text-blue-400">ENTERPRISE ATX</h2>
-            <span className="text-[10px] text-slate-500 block uppercase font-mono tracking-widest mt-1">Algorithmic Match Core</span>
+            <div className="flex items-center space-x-3">
+              <div className="h-4 w-4 bg-blue-900 rounded-full animate-pulse" />
+              <h2 className="text-2xl font-black tracking-tight text-blue-900 dark:text-blue-400">MATRIX ATS</h2>
+            </div>
+            <p className="text-xs font-mono uppercase tracking-widest text-slate-400 mt-2">Enterprise Edition v12</p>
           </div>
 
-          {/* 5-Slider Parametric Control Center Dashboard Block */}
-          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-4">
-            <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-              <span className="text-xs font-bold text-slate-300">🎛️ CRITERIA CONFIG</span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-black ${totalWeightBubble === 100 ? 'bg-emerald-950 text-emerald-400 border border-emerald-900' : 'bg-red-950 text-red-400 border border-red-900'}`}>{totalWeightBubble}%</span>
-            </div>
-
-            <div className="space-y-3 font-mono text-[11px]">
-              <div>
-                <div className="flex justify-between text-slate-400 mb-1"><span>Semantic Context</span><span className="text-blue-400 font-bold">{weights.w_sem}%</span></div>
-                <input type="range" min="0" max="100" value={weights.w_sem} onChange={(e) => handleSliderAdjustment('w_sem', e.target.value)} className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500" />
-              </div>
-              <div>
-                <div className="flex justify-between text-slate-400 mb-1"><span>Experience Fit</span><span className="text-purple-400 font-bold">{weights.w_exp}%</span></div>
-                <input type="range" min="0" max="100" value={weights.w_exp} onChange={(e) => handleSliderAdjustment('w_exp', e.target.value)} className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-purple-500" />
-              </div>
-              <div>
-                <div className="flex justify-between text-slate-400 mb-1"><span>Hard Skills Exact</span><span className="text-amber-400 font-bold">{weights.w_ski}%</span></div>
-                <input type="range" min="0" max="100" value={weights.w_ski} onChange={(e) => handleSliderAdjustment('w_ski', e.target.value)} className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500" />
-              </div>
-              <div>
-                <div className="flex justify-between text-slate-400 mb-1"><span>Project Domain</span><span className="text-cyan-400 font-bold">{weights.w_proj}%</span></div>
-                <input type="range" min="0" max="100" value={weights.w_proj} onChange={(e) => handleSliderAdjustment('w_proj', e.target.value)} className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500" />
-              </div>
-              <div>
-                <div className="flex justify-between text-slate-400 mb-1"><span>Behavioral Signals</span><span className="text-pink-400 font-bold">{weights.w_beh}%</span></div>
-                <input type="range" min="0" max="100" value={weights.w_beh} onChange={(e) => handleSliderAdjustment('w_beh', e.target.value)} className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-pink-500" />
-              </div>
-            </div>
-            {totalWeightBubble !== 100 && <p className="text-[9px] text-red-400 italic font-mono animate-pulse">Warning: Target total parameters weight should aggregate to 100%.</p>}
-          </div>
-
-          <div className="space-y-2">
-            <a href={aiRecruiterAPI.getExportUrl()} download className="block text-center bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black py-2 rounded text-xs tracking-wide transition-all">
-              📥 EXPORT REPORT CSV
-            </a>
-            <button onClick={handleWipeHistoryTrigger} className="w-full bg-red-950/60 border border-red-900/60 text-red-400 hover:bg-red-900 hover:text-white font-bold py-2 rounded text-xs transition-all">
-              🗑️ PURGE HISTORY LEDGER
+          {/* Navigation Action Screen State Slots Buttons */}
+          <nav className="space-y-3">
+            <button 
+              onClick={() => setCurrentScreen('workspace')}
+              className={`w-full flex items-center space-x-4 px-5 py-4 rounded-xl font-bold transition-all text-lg ${currentScreen === 'workspace' ? 'bg-blue-900 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-800'}`}
+            >
+              <Briefcase size={22} />
+              <span>Pipeline Work</span>
             </button>
-          </div>
-        </div>
-        <div className="text-xs text-slate-500 bg-slate-950 p-3 rounded border border-slate-800 font-mono mt-4">
-          Node Connection: <span className="text-emerald-400 font-bold">{serverStatus}</span>
-        </div>
-      </div>
-
-      {/* Main Board Frame */}
-      <div className="flex-1 flex flex-col overflow-y-auto p-6 md:p-10 space-y-8">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Adaptive Rank Matrix</h1>
-          <p className="text-slate-400 text-sm">Real-time localized hybrid vector compilation engine logs</p>
-        </div>
-
-        {errorUI && <div className="bg-red-950/40 border border-red-900 text-red-400 p-4 rounded-lg font-mono text-xs">{errorUI}</div>}
-
-        {/* Analytical Score Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-slate-900 p-5 rounded-xl border border-slate-800"><span className="text-slate-500 text-xs font-mono block uppercase">Ingested Files</span><span className="text-3xl font-black text-blue-400">{analytics?.total_matches || 0}</span></div>
-          <div className="bg-slate-900 p-5 rounded-xl border border-slate-800"><span className="text-slate-500 text-xs font-mono block uppercase">Avg Benchmark</span><span className="text-3xl font-black text-amber-400">{(analytics?.avg_score * 100).toFixed(1)}%</span></div>
-          <div className="bg-slate-900 p-5 rounded-xl border border-slate-800"><span className="text-slate-500 text-xs font-mono block uppercase">Peak Cluster Match</span><span className="text-3xl font-black text-emerald-400">{(analytics?.highest_score * 100).toFixed(1)}%</span></div>
-        </div>
-
-        {/* Staging Binary Slots */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <label className="border-2 border-dashed border-slate-800 hover:border-blue-500/40 p-6 text-center cursor-pointer block text-slate-400 text-sm rounded-xl bg-slate-900/40"><input type="file" accept=".pdf,.txt" multiple className="hidden" onChange={(e) => setResumeBatch(Array.from(e.target.files))} />{resumeBatch.length > 0 ? `📁 ${resumeBatch.length} Vectors Staged` : "Drop Raw Resumes (PDF Bulk)"}</label>
-          <label className="border-2 border-dashed border-slate-800 hover:border-emerald-500/40 p-6 text-center cursor-pointer block text-slate-400 text-sm rounded-xl bg-slate-900/40"><input type="file" accept=".pdf,.txt" className="hidden" onChange={(e) => setJobFile(e.target.files[0])} />{jobFile ? `📄 ${jobFile.name}` : "Drop Job Blueprint File"}</label>
-        </div>
-
-        {/* Table View Layout Matrix */}
-        <div className="bg-slate-900 p-6 rounded-xl border border-slate-800">
-          <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
-            <input type="text" placeholder="🔍 Search database rows..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-sm w-full sm:w-64 focus:outline-none focus:border-blue-500 text-xs font-mono" />
-            <button onClick={handleBatchProcessingTrigger} disabled={loading} className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-lg text-xs font-mono transition-all ml-auto">
-              {loading ? "Processing Engine Async Threads..." : "⚡ Execute Realtime Score Indexing"}
-            </button>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-mono">
-              <thead className="bg-slate-950 text-slate-500 border-b border-slate-800">
-                <tr>
-                  <th className="py-3 px-4 w-16 text-center">Rank</th>
-                  <th className="py-3 px-4">Ledger Flag</th>
-                  <th className="py-3 px-4">Profile node Id</th>
-                  <th className="py-3 px-4">Target Deployment Hub</th>
-                  <th className="py-3 px-4 text-center">Configured Weighted Score</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/40">
-                {processedHistory.map((row, idx) => (
-                  <tr key={idx} onClick={() => handleRowClickEngine(row.candidate_name)} className="hover:bg-blue-950/20 cursor-pointer border-l-2 border-transparent hover:border-blue-500 transition-all">
-                    <td className="py-3 px-4 text-center font-black text-amber-400">#{idx + 1}</td>
-                    <td className="py-3 px-4">{row.is_flagged === 1 ? <span className="text-red-500 font-bold bg-red-950/30 px-2 py-0.5 rounded border border-red-900/40 text-[10px]">⚠️ FLAGGED</span> : <span className="text-slate-600">--</span>}</td>
-                    <td className="py-3 px-4 font-bold text-slate-200">👤 {row.candidate_name}</td>
-                    <td className="py-3 px-4 text-slate-400">{row.job_filename}</td>
-                    <td className="py-3 px-4 text-center"><span className="bg-slate-950 text-emerald-400 px-2 py-1 rounded font-bold border border-emerald-900/30">{(row.score * 100).toFixed(1)}%</span></td>
-                  </tr>
-                ))}
-                {processedHistory.length === 0 && (
-                  <tr><td colSpan="5" className="text-center p-8 text-slate-600">No active matrix indexes cached inside database streams.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      {insightLoading && <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center z-50"><div className="bg-slate-950 border border-slate-800 px-6 py-4 rounded-xl text-xs font-mono text-blue-400 animate-pulse">⚙️ Recalculating Dynamic Weight Vectors...</div></div>}
-
-      {/* Drawer Details Panel Panel Layout */}
-      {selectedInsight && (
-        <div className="fixed inset-y-0 right-0 w-full sm:w-[480px] bg-slate-900 border-l border-slate-800 shadow-2xl p-8 z-50 overflow-y-auto">
-          <div className="flex justify-between items-center border-b border-slate-800 pb-4 mb-6">
-            <div>
-              <span className="text-[10px] font-bold bg-blue-950 text-blue-400 border border-blue-900/50 px-2 py-0.5 rounded uppercase tracking-wider">Dynamic Slider Evaluation Log</span>
-              <h3 className="text-lg font-black text-slate-100 mt-1">👤 {selectedInsight.candidate}</h3>
-            </div>
-            <button onClick={() => { setSelectedInsight(null); refreshDataHub(); }} className="text-xs text-slate-400 hover:text-white border border-slate-700 px-3 py-1 rounded bg-slate-950 font-mono transition-all">[ CLOSE ]</button>
-          </div>
-
-          <div className="space-y-6 text-xs font-mono">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-                <span className="text-slate-500 block text-[10px] uppercase mb-1">Status Recommendation</span>
-                <span className={`font-black px-2 py-0.5 rounded text-[11px] inline-block ${selectedInsight.status === 'SHORTLIST' ? 'bg-emerald-950 text-emerald-400 border border-emerald-900' : selectedInsight.status === 'REJECT' ? 'bg-red-950 text-red-400 border border-red-900' : 'bg-amber-950 text-amber-400 border border-amber-900'}`}>{selectedInsight.status}</span>
-              </div>
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-                <span className="text-slate-500 block text-[10px] uppercase mb-1">Weighted Runtime Score</span>
-                <span className="text-slate-300 font-bold text-[11px] text-emerald-400">{(selectedInsight.calculated_score * 100).toFixed(1)}%</span>
-              </div>
-            </div>
-
-            <div className="bg-blue-950/20 border border-blue-900/40 p-3 rounded-lg text-blue-300 leading-relaxed">
-              <strong>📈 Structural Ledger Context Check:</strong> {selectedInsight.pool_benchmark}
-            </div>
             
-            <div className="bg-slate-950 border border-slate-800 p-4 rounded-lg">
-              <span className="text-slate-500 block text-[10px] font-bold uppercase mb-2">📋 Executive Abstract Summary</span>
-              <p className="text-slate-300 italic leading-relaxed text-xs">"{selectedInsight.pitch}"</p>
+            <button 
+              onClick={() => setCurrentScreen('parameters')}
+              className={`w-full flex items-center space-x-4 px-5 py-4 rounded-xl font-bold transition-all text-lg ${currentScreen === 'parameters' ? 'bg-blue-900 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-800'}`}
+            >
+              <Sliders size={22} />
+              <span>Criteria Config</span>
+            </button>
+          </nav>
+        </div>
+
+        {/* Global Functional Theme Toggle Component */}
+        <div className="space-y-4">
+          <button 
+            onClick={toggleGlobalTheme} 
+            className="w-full flex items-center justify-between px-5 py-4 rounded-xl border font-bold text-sm bg-transparent border-slate-300 dark:border-slate-700 hover:bg-slate-200/40 dark:hover:bg-slate-800 transition-all"
+          >
+            <span className="text-slate-500 dark:text-slate-400">Visual Interface State:</span>
+            <div className="flex items-center space-x-2 text-blue-900 dark:text-amber-400">
+              {theme === 'light' ? <Sun size={20} /> : <Moon size={20} />}
+              <span className="uppercase text-xs font-mono font-black">{theme}</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* 🖥️ DYNAMIC WORKSPACE COMPONENT PANEL SHEET */}
+      <div className="flex-1 flex flex-col overflow-y-auto p-8 md:p-12 space-y-10">
+        
+        {/* Global Minimal Metrics Header Bar Block */}
+        <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-6">
+          <div>
+            <h1 className="text-4xl font-extrabold tracking-tight">
+              {currentScreen === 'workspace' ? "Talent Workspace Matrix" : "Recruitment Weight Configuration"}
+            </h1>
+            <p className="text-slate-400 text-base mt-1">
+              {currentScreen === 'workspace' ? "Execute real-time pipeline index transformations" : "Balance localized scoring metrics equations logic"}
+            </p>
+          </div>
+
+          {/* Focused Metric Display Block (Only active variable retained) */}
+          <div className={`px-6 py-4 rounded-2xl border text-right shadow-xs ${elementCardClass}`}>
+            <span className="text-slate-400 text-xs font-mono uppercase tracking-wider block">Total Resumes Scanned</span>
+            <span className="text-3xl font-black tracking-tight text-blue-900 dark:text-blue-400">{analytics?.total_matches || 0} Assets</span>
+          </div>
+        </div>
+
+        {errorUI && (
+          <div className="bg-red-500/10 border border-red-500 text-red-600 dark:text-red-400 p-5 rounded-xl font-mono text-sm flex items-center space-x-3">
+            <AlertTriangle size={20} />
+            <span>{errorUI}</span>
+          </div>
+        )}
+
+        {/* 1. SCREEN OPTION A: REALTIME WORKSPACE FLOW PIPELINE */}
+        {currentScreen === 'workspace' && (
+          <div className="space-y-10">
+            {/* Structured File Upload Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <label className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer block hover:border-blue-700 transition-all ${elementCardClass}`}>
+                <input type="file" accept=".pdf,.txt" multiple className="hidden" onChange={(e) => setResumeBatch(Array.from(e.target.files))} />
+                <UploadCloud className="mx-auto text-slate-400 mb-3" size={36} />
+                <span className="block font-bold text-lg text-slate-700 dark:text-slate-300">Stage Candidate Resumes</span>
+                <span className="block text-sm text-slate-400 mt-1">{resumeBatch.length > 0 ? `🔥 ${resumeBatch.length} Document Vectors Buffered` : "Accepts raw bulk data streams"}</span>
+              </label>
+
+              <label className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer block hover:border-blue-700 transition-all ${elementCardClass}`}>
+                <input type="file" accept=".pdf,.txt" className="hidden" onChange={(e) => setJobFile(e.target.files[0])} />
+                <FileText className="mx-auto text-slate-400 mb-3" size={36} />
+                <span className="block font-bold text-lg text-slate-700 dark:text-slate-300">Stage Job Description</span>
+                <span className="block text-sm text-slate-400 mt-1">{jobFile ? `📄 ${jobFile.name}` : "Upload targeting requirements sheet"}</span>
+              </label>
+            </div>
+
+            {/* Ingestion Table Matrix Segment Wrapper */}
+            <div className={`p-8 rounded-2xl border shadow-sm ${elementCardClass}`}>
+              <div className="flex flex-wrap justify-between items-center mb-6 gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
+                <div className="relative w-full sm:w-80">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><Search size={18} /></span>
+                  <input type="text" placeholder="Search processed names..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className={`w-full pl-10 pr-4 py-3 rounded-xl border text-sm font-medium focus:outline-none focus:border-blue-900 ${inputControlClass}`} />
+                </div>
+                
+                {/* Relocated Utility Operations Command Strip Block */}
+                <div className="flex items-center space-x-3 w-full sm:w-auto">
+                  <a href={aiRecruiterAPI.getExportUrl()} download className="flex items-center justify-center space-x-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-4 py-3 rounded-xl text-sm transition-all shadow-xs">
+                    <Download size={18} />
+                    <span>Export CSV</span>
+                  </a>
+                  <button onClick={handleWipeHistoryTrigger} className="flex items-center justify-center space-x-2 bg-red-950/20 text-red-600 border border-red-500/20 hover:bg-red-600 hover:text-white font-bold px-4 py-3 rounded-xl text-sm transition-all">
+                    <Trash2 size={18} />
+                    <span>Purge Ledger</span>
+                  </button>
+                  <button onClick={handleBatchProcessingTrigger} disabled={loading} className="bg-blue-900 hover:bg-blue-800 text-white font-black px-6 py-3 rounded-xl text-sm transition-all shadow-md ml-auto">
+                    {loading ? "Syncing Clusters..." : "Compute System Ranks"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Responsive Layout Grid Data Table */}
+              <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+                <table className="w-full text-left text-sm border-collapse">
+                  <thead className={`font-mono text-xs uppercase tracking-wider ${tableHeaderClass}`}>
+                    <tr>
+                      <th className="py-4 px-5 text-center w-20">Rank</th>
+                      <th className="py-4 px-5 w-32">Auditor Flag</th>
+                      <th className="py-4 px-5">Candidate Node ID</th>
+                      <th className="py-4 px-5">Target Specifications File</th>
+                      <th className="py-4 px-5 text-center w-40">System Score</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800/40">
+                    {processedHistory.map((row, idx) => (
+                      <tr key={idx} onClick={() => handleRowClickEngine(row.candidate_name)} className={`cursor-pointer transition-all border-l-4 border-transparent hover:border-blue-900 ${tableRowClass}`}>
+                        <td className="py-4 px-5 text-center font-black text-blue-900 dark:text-blue-400 text-base">#{idx + 1}</td>
+                        <td className="py-4 px-5">
+                          {row.is_flagged === 1 ? (
+                            <span className="flex items-center text-red-600 font-bold bg-red-500/10 border border-red-500/20 text-[11px] px-2 py-0.5 rounded-md w-fit"><AlertTriangle size={12} className="mr-1" /> AUDIT</span>
+                          ) : <span className="text-slate-400">--</span>}
+                        </td>
+                        <td className="py-4 px-5 font-bold text-slate-800 dark:text-slate-200 text-base">👤 {row.candidate_name}</td>
+                        <td className="py-4 px-5 text-slate-500 dark:text-slate-400 font-mono text-xs">{row.job_filename}</td>
+                        <td className="py-4 px-5 text-center">
+                          <span className="bg-blue-900 text-white px-3 py-1 rounded-lg font-black text-sm">{(row.score * 100).toFixed(1)}%</span>
+                        </td>
+                      </tr>
+                    ))}
+                    {processedHistory.length === 0 && (
+                      <tr><td colSpan="5" className="text-center p-12 text-slate-400 font-medium">No candidate matrices indexed within active relational tracking buffers.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 2. SCREEN OPTION B: IMMERSIVE WEIGHT CONFIGURATION PANEL */}
+        {currentScreen === 'parameters' && (
+          <div className={`p-10 rounded-2xl border shadow-md space-y-8 ${elementCardClass}`}>
+            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-4">
+              <div>
+                <h3 className="text-2xl font-bold tracking-tight">Parametric Calibration Board</h3>
+                <p className="text-slate-400 text-sm mt-0.5">Control operational scaling factors weights parameters on the fly</p>
+              </div>
+              <div className={`px-4 py-2 rounded-xl font-mono text-base font-black border ${totalWeightBubble === 100 ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-red-500/10 text-red-600 border-red-500/20'}`}>
+                Current Aggregation: {totalWeightBubble}% / 100%
+              </div>
+            </div>
+
+            {/* Enlarged Sliders Cluster Block Grid Layout */}
+            <div className="space-y-8 py-4">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-base font-bold">
+                  <span className="flex items-center space-x-2"><TrendingUp size={18} className="text-blue-900" /> <span>Semantic Context Integration (Vector Core)</span></span>
+                  <span className="text-blue-900 font-mono text-lg">{weights.w_sem}%</span>
+                </div>
+                <input type="range" min="0" max="100" value={weights.w_sem} onChange={(e) => updateWeightParameter('w_sem', e.target.value)} className="w-full" />
+                <p className="text-xs text-slate-400">Maps contextual matching parameters via dense structural neural network values weights.</p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-base font-bold">
+                  <span className="flex items-center space-x-2"><Briefcase size={18} className="text-purple-600" /> <span>Corporate Experience Fit Metrics</span></span>
+                  <span className="text-purple-600 font-mono text-lg">{weights.w_exp}%</span>
+                </div>
+                <input type="range" min="0" max="100" value={weights.w_exp} onChange={(e) => updateWeightParameter('w_exp', e.target.value)} className="w-full" />
+                <p className="text-xs text-slate-400">Evaluates baseline duration blocks specified across technical leadership fields nodes.</p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-base font-bold">
+                  <span className="flex items-center space-x-2"><CheckSquare size={18} className="text-amber-600" /> <span>Hard Skills Token Match Protection (Sparse Filters)</span></span>
+                  <span className="text-amber-600 font-mono text-lg">{weights.w_ski}%</span>
+                </div>
+                <input type="range" min="0" max="100" value={weights.w_ski} onChange={(e) => updateWeightParameter('w_ski', e.target.value)} className="w-full" />
+                <p className="text-xs text-slate-400">Validates clear keyword match exact strings presence inside raw documentation blocks.</p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-base font-bold">
+                  <span className="flex items-center space-x-2"><FileText size={18} className="text-cyan-600" /> <span>Project Domain Relevance Mapping (e.g., Fintech Terms)</span></span>
+                  <span className="text-cyan-600 font-mono text-lg">{weights.w_proj}%</span>
+                </div>
+                <input type="range" min="0" max="100" value={weights.w_proj} onChange={(e) => updateWeightParameter('w_proj', e.target.value)} className="w-full" />
+                <p className="text-xs text-slate-400">Scans contextual projects layout files for specified corporate vertical alignments.</p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-base font-bold">
+                  <span className="flex items-center space-x-2"><Sliders size={18} className="text-pink-600" /> <span>Behavioral Signals & Availability Half-Life Decay</span></span>
+                  <span className="text-pink-600 font-mono text-lg">{weights.w_beh}%</span>
+                </div>
+                <input type="range" min="0" max="100" value={weights.w_beh} onChange={(e) => updateWeightParameter('w_beh', e.target.value)} className="w-full" />
+                <p className="text-xs text-slate-400">Downweights platform dormancy indices using algorithmic half-life decay mathematical parameters.</p>
+              </div>
+            </div>
+
+            {totalWeightBubble !== 100 && (
+              <div className="bg-amber-500/10 border border-amber-500 text-amber-700 dark:text-amber-400 p-4 rounded-xl text-sm font-medium animate-pulse">
+                ⚠️ Balanced Equation Notice: Ensure global parameters totals settle at 100% to protect rank stability layers.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 📊 DRAWER SPECIFIC INSIGHTS PANEL LAYER REVIEWS */}
+      {insightLoading && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50">
+          <div className="bg-slate-900 border border-slate-800 px-8 py-5 rounded-2xl text-sm font-mono text-blue-400 animate-pulse flex items-center space-x-3">
+            <span>⚙️ Synthesizing Thematic Pipeline Vectors...</span>
+          </div>
+        </div>
+      )}
+
+      {selectedInsight && (
+        <div className={`fixed inset-y-0 right-0 w-full sm:w-[540px] border-l shadow-2xl p-8 z-50 overflow-y-auto ${sidebarClass}`}>
+          <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-5 mb-6">
+            <div>
+              <span className="text-xs font-bold bg-blue-900 text-white px-2.5 py-0.5 rounded-md uppercase tracking-wider font-mono">Profile Insights Summary</span>
+              <h3 className="text-2xl font-black text-slate-800 dark:text-slate-100 mt-2">👤 {selectedInsight.candidate}</h3>
+            </div>
+            <button onClick={() => { setSelectedInsight(null); refreshDataHub(); }} className="text-xs font-mono font-bold border px-3 py-2 rounded-xl bg-transparent hover:bg-slate-200 dark:hover:bg-slate-800 transition-all">[ ESCAPE ]</button>
+          </div>
+
+          <div className="space-y-6 text-sm">
+            <div className="grid grid-cols-2 gap-4">
+              <div className={`p-4 rounded-xl border ${elementCardClass}`}>
+                <span className="text-slate-400 block text-xs font-mono uppercase mb-1">Status Recommendation</span>
+                <span className={`font-black text-xs px-2.5 py-0.5 rounded-md inline-block ${selectedInsight.status === 'SHORTLIST' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : selectedInsight.status === 'REJECT' ? 'bg-red-500/10 text-red-600 border border-red-500/20' : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'}`}>{selectedInsight.status}</span>
+              </div>
+              <div className={`p-4 rounded-xl border ${elementCardClass}`}>
+                <span className="text-slate-400 block text-xs font-mono uppercase mb-1">Recalculated Score</span>
+                <span className="font-black text-emerald-600 text-base">{(selectedInsight.calculated_score * 100).toFixed(1)}% Match</span>
+              </div>
+            </div>
+
+            <div className="bg-blue-500/5 border border-blue-500/20 p-4 rounded-xl text-blue-900 dark:text-blue-300 leading-relaxed font-medium">
+              <strong>📈 Metric Distribution Check:</strong> {selectedInsight.pool_benchmark}
+            </div>
+
+            <div className={`p-5 rounded-xl border ${elementCardClass}`}>
+              <span className="text-slate-400 block text-xs font-mono uppercase mb-2">Executive Overview Summary</span>
+              <p className="text-slate-700 dark:text-slate-300 italic leading-relaxed font-medium">"{selectedInsight.pitch}"</p>
             </div>
 
             <div className="space-y-4">
-              <div className="bg-emerald-950/20 border border-emerald-900/40 p-4 rounded-lg">
-                <span className="text-emerald-400 font-bold block mb-2 uppercase text-[11px] tracking-wide">🟢 Hybrid Strengths Verified</span>
-                <ul className="space-y-1.5 list-disc list-inside text-slate-300 leading-relaxed">{selectedInsight.strengths?.map((s, i) => <li key={i}>{s}</li>)}</ul>
+              <div className="bg-emerald-500/5 border border-emerald-500/20 p-5 rounded-xl">
+                <span className="text-emerald-600 font-bold block mb-2 uppercase text-xs font-mono tracking-wider">🟢 Core Strengths Verified</span>
+                <ul className="space-y-2 list-disc list-inside text-slate-600 dark:text-slate-300 leading-relaxed font-medium">{selectedInsight.strengths?.map((s, i) => <li key={i}>{s}</li>)}</ul>
               </div>
 
-              <div className="bg-amber-950/20 border border-amber-900/40 p-4 rounded-lg">
-                <span className="text-amber-400 font-bold block mb-2 uppercase text-[11px] tracking-wide">🟡 Extracted Missing Skill Gaps</span>
-                <ul className="space-y-1.5 list-disc list-inside text-slate-300 leading-relaxed">{selectedInsight.gaps?.map((g, i) => <li key={i}>{g}</li>)}</ul>
+              <div className="bg-amber-500/5 border border-amber-500/20 p-5 rounded-xl">
+                <span className="text-amber-600 font-bold block mb-2 uppercase text-xs font-mono tracking-wider">🟡 Core Structural Skill Gaps</span>
+                <ul className="space-y-2 list-disc list-inside text-slate-600 dark:text-slate-300 leading-relaxed font-medium">{selectedInsight.gaps?.map((g, i) => <li key={i}>{g}</li>)}</ul>
               </div>
             </div>
 
-            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-              <span className="text-blue-400 font-bold block mb-2 uppercase text-[11px] tracking-wide">🤖 Suggested Local Interview Questions</span>
-              <ol className="space-y-3 list-decimal list-inside text-slate-300 leading-relaxed">{selectedInsight.interview_questions?.map((q, i) => <li key={i} className="pl-1">"{q}"</li>)}</ol>
+            <div className={`p-5 rounded-xl border ${elementCardClass}`}>
+              <span className="text-blue-900 dark:text-blue-400 font-bold block mb-2 uppercase text-xs font-mono tracking-wider">🤖 Target Diagnostic Questions</span>
+              <ol className="space-y-3 list-decimal list-inside text-slate-600 dark:text-slate-300 leading-relaxed font-medium">{selectedInsight.interview_questions?.map((q, i) => <li key={i} className="pl-1">"{q}"</li>)}</ol>
             </div>
 
-            <div className="bg-slate-950 p-4 rounded-xl border border-blue-900/30 space-y-3 shadow-inner">
-              <span className="text-slate-200 font-bold block uppercase text-[11px] tracking-wide border-b border-slate-800 pb-2">✏️ Action Review Field Layer</span>
-              <label className="flex items-center space-x-2 cursor-pointer text-slate-300 py-1">
-                <input type="checkbox" checked={isFlagged} onChange={(e) => setIsFlagged(e.target.checked)} className="rounded bg-slate-900 border-slate-700 text-blue-500 focus:ring-0 w-4 h-4" />
-                <span className="text-xs text-slate-400">Flag profile for multi-user audit</span>
+            {/* Auditor Inputs Frame */}
+            <div className={`p-5 rounded-xl border space-y-4 ${elementCardClass}`}>
+              <span className="text-slate-800 dark:text-slate-200 font-bold block uppercase text-xs font-mono tracking-wider border-b border-slate-200 dark:border-slate-800 pb-2">✏️ Audit Evaluation Assessment</span>
+              
+              <label className="flex items-center space-x-3 cursor-pointer text-slate-700 dark:text-slate-300">
+                <div onClick={() => setIsFlagged(!isFlagged)} className="text-blue-900 dark:text-blue-400">
+                  {isFlagged ? <CheckSquare size={20} /> : <Square size={20} />}
+                </div>
+                <span className="text-sm font-medium">Flag profile node for priority audit oversight review</span>
               </label>
-              <textarea value={localNotes} onChange={(e) => setLocalNotes(e.target.value)} placeholder="Enter localized evaluation assessment..." className="w-full h-20 bg-slate-900 border border-slate-800 rounded p-2 text-slate-200 focus:outline-none focus:border-blue-500 text-xs" />
-              <button onClick={handleSaveStatusState} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded text-xs tracking-wider transition-all shadow-md">
-                💾 RECORD MODERATION DECISION
+
+              <textarea value={localNotes} onChange={(e) => setLocalNotes(e.target.value)} placeholder="Type localized reviewer notes here..." className={`w-full h-24 rounded-xl border p-3 text-sm focus:outline-none focus:border-blue-900 font-medium ${inputControlClass}`} />
+              
+              <button onClick={handleSaveStatusState} className="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-3.5 rounded-xl text-sm transition-all shadow-md">
+                Synchronize Audit Evaluation
               </button>
             </div>
           </div>
