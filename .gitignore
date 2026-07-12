@@ -10,3 +10,5 @@ data/candidates.jsonl
 backend/recruiter_matrix.db
 backend/recruiter_history.db
 recruiter_history.db
+recruiter_matrix.db
+chroma_vector_db/
