@@ -13,7 +13,7 @@ export default function App() {
   const [backendHealthy, setBackendHealthy] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [resumes, setResumes] = useState([]);
-  const [jobDescription, setJobDescription] = useState('');
+  const [jobDescriptionFile, setJobDescriptionFile] = useState(null); // Changed state to handle PDF
   const [results, setResults] = useState([]);
   const [isCompiling, setIsCompiling] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
@@ -24,6 +24,9 @@ export default function App() {
     experience: 40,
     cultural: 20
   });
+
+  // Calculate total weight to verify constraint limits
+  const totalWeight = weights.skills + weights.experience + weights.cultural;
 
   const handleWeightChange = (key, val) => {
     let parsedVal = parseInt(val) || 0;
@@ -59,15 +62,19 @@ export default function App() {
 
   const handleCompile = async (e) => {
     e.preventDefault();
-    if (resumes.length === 0 || !jobDescription.trim()) {
-      alert("Bhai, please resume files aur job description dono upload karo!");
+    if (resumes.length === 0 || !jobDescriptionFile) {
+      alert("Bhai, please resume files aur Job Description PDF dono upload karo!");
+      return;
+    }
+    if (totalWeight > 100) {
+      alert("Bhai calculation galat hai, total weightage 100% se zyada nahi ho sakti!");
       return;
     }
 
     setIsCompiling(true);
     const formData = new FormData();
     resumes.forEach(file => formData.append('resumes', file));
-    formData.append('job_description', jobDescription);
+    formData.append('job_description_file', jobDescriptionFile); // Append PDF object instead of string
     formData.append('skills_weight', weights.skills);
     formData.append('experience_weight', weights.experience);
     formData.append('cultural_weight', weights.cultural);
@@ -79,7 +86,7 @@ export default function App() {
       setResults(res.data);
     } catch (err) {
       console.error(err);
-      alert("Error compiling scores. Please check backend configuration.");
+      alert("Error compiling metrics. Check backend logs.");
     } finally {
       setIsCompiling(false);
     }
@@ -88,7 +95,7 @@ export default function App() {
   return (
     <div className={`${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'} min-h-screen transition-colors duration-300 font-sans pb-12`}>
       
-      {/* Navbar segment */}
+      {/* Top Navbar */}
       <header className={`border-b ${isDark ? 'border-slate-800 bg-slate-900/60' : 'border-slate-200 bg-white/70'} backdrop-blur-md sticky top-0 z-40 px-6 py-4`}>
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -128,13 +135,15 @@ export default function App() {
             <AlertTriangle className="h-6 w-6 text-rose-400 shrink-0 mt-0.5" />
             <div>
               <h3 className="font-bold text-rose-400">System Connection Alert!</h3>
-              <p className="text-sm opacity-80 mt-1">Backend engine is currently unreachable. Start the server via `python -m uvicorn backend.main:app --reload` to activate communication rules.</p>
+              <p className="text-sm opacity-80 mt-1">Backend engine is currently unreachable. Start the server using standard commands to activate.</p>
             </div>
           </div>
         )}
 
-        {/* Inputs Configuration Container */}
+        {/* Configurations Layout Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Sliders Area */}
           <div className="lg:col-span-1">
             <div className={`p-6 rounded-2xl border ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200'} shadow-sm space-y-6`}>
               <div className="flex items-center gap-2 pb-4 border-b border-dashed border-slate-700/50">
@@ -152,9 +161,7 @@ export default function App() {
                     <span className="opacity-80">{slider.label}</span>
                     <div className="flex items-center gap-1">
                       <input 
-                        type="number"
-                        min="0"
-                        max="100"
+                        type="number" min="0" max="100"
                         value={weights[slider.key]}
                         onChange={(e) => handleWeightChange(slider.key, e.target.value)}
                         className={`w-14 text-center py-0.5 px-1 rounded border text-xs font-bold ${
@@ -165,21 +172,30 @@ export default function App() {
                     </div>
                   </div>
                   <input 
-                    type="range"
-                    min="0"
-                    max="100"
+                    type="range" min="0" max="100"
                     value={weights[slider.key]}
                     onChange={(e) => handleWeightChange(slider.key, e.target.value)}
                     className="w-full accent-indigo-500 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer"
                   />
                 </div>
               ))}
+
+              {/* Real-time Parameter Limit Sum Checker Warning */}
+              {totalWeight > 100 && (
+                <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs flex items-center gap-2 font-semibold">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  <span>Warning: Total weightage is {totalWeight}%. It must not exceed 100%!</span>
+                </div>
+              )}
             </div>
           </div>
 
+          {/* Dual Upload System Controls */}
           <div className="lg:col-span-2">
             <form onSubmit={handleCompile} className={`p-6 rounded-2xl border ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200'} space-y-6 shadow-sm`}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* File Upload 1: Resumes */}
                 <div className={`p-5 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-center transition-all ${
                   isDark ? 'border-slate-800 hover:border-indigo-500/50' : 'border-slate-300 hover:border-indigo-500'
                 }`}>
@@ -189,33 +205,46 @@ export default function App() {
                     className="hidden" id="resume-input" 
                   />
                   <label htmlFor="resume-input" className="cursor-pointer flex flex-col items-center">
-                    <FileText className="h-10 w-10 text-indigo-500 mb-2" />
+                    <FileText className="h-9 w-9 text-indigo-500 mb-1" />
                     <span className="font-semibold text-sm">Batch Stage Resumes</span>
+                    <span className="text-[11px] opacity-50">Upload multiple PDFs</span>
                     {resumes.length > 0 && (
-                      <span className="mt-2 text-xs bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded border border-indigo-500/20 font-bold">
+                      <span className="mt-2 text-xs bg-indigo-500/10 text-indigo-400 px-2.5 py-0.5 rounded border border-indigo-500/20 font-bold">
                         {resumes.length} Files Selected
                       </span>
                     )}
                   </label>
                 </div>
 
-                <div className="flex flex-col space-y-2">
-                  <label className="text-sm font-semibold opacity-80">Target Job Description</label>
-                  <textarea 
-                    placeholder="Paste job criteria context here..."
-                    value={jobDescription}
-                    onChange={(e) => setJobDescription(e.target.value)}
-                    className={`w-full flex-1 min-h-[110px] p-3 text-sm rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
-                      isDark ? 'bg-slate-800/40 border-slate-800 text-slate-100' : 'bg-slate-100 border-slate-300 text-slate-900'
-                    }`}
+                {/* File Upload 2: Job Description PDF (Fixed Issue 1) */}
+                <div className={`p-5 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-center transition-all ${
+                  isDark ? 'border-slate-800 hover:border-indigo-500/50' : 'border-slate-300 hover:border-indigo-500'
+                }`}>
+                  <input 
+                    type="file" accept=".pdf"
+                    onChange={(e) => setJobDescriptionFile(e.target.files[0])}
+                    className="hidden" id="jd-input" 
                   />
+                  <label htmlFor="jd-input" className="cursor-pointer flex flex-col items-center">
+                    <FileText className="h-9 w-9 text-amber-500 mb-1" />
+                    <span className="font-semibold text-sm">Target Job Description</span>
+                    <span className="text-[11px] opacity-50">Upload one criteria PDF</span>
+                    {jobDescriptionFile && (
+                      <span className="mt-2 text-xs bg-amber-500/10 text-amber-400 px-2.5 py-0.5 rounded border border-amber-500/20 font-bold max-w-[180px] truncate">
+                        {jobDescriptionFile.name}
+                      </span>
+                    )}
+                  </label>
                 </div>
+
               </div>
 
               <button 
-                type="submit" disabled={isCompiling || !backendHealthy}
+                type="submit" disabled={isCompiling || !backendHealthy || totalWeight > 100}
                 className={`w-full py-3 rounded-xl font-bold transition-all ${
-                  isCompiling || !backendHealthy ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-md'
+                  isCompiling || !backendHealthy || totalWeight > 100
+                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed' 
+                    : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-md'
                 }`}
               >
                 {isCompiling ? 'Compiling Alignment Scores...' : 'Compile Alignment Ranks'}
@@ -224,7 +253,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Data Response Matrix */}
+        {/* Results Matrix Table Grid (View Profile on Extreme Right End) */}
         {results.length > 0 && (
           <div className={`border rounded-2xl overflow-hidden shadow-sm ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200'}`}>
             <div className="px-6 py-4 border-b border-slate-800/60 bg-slate-900/10">
@@ -282,7 +311,7 @@ export default function App() {
             isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-900'
           }`}>
             
-            {/* Header Data Parameters Grid */}
+            {/* Header Data Grid with Dynamic Hyperlinks (Fixed Issue 2) */}
             <div className={`px-6 py-5 border-b flex justify-between items-start ${isDark ? 'border-slate-800 bg-slate-950/50' : 'border-slate-200 bg-slate-50'}`}>
               <div className="space-y-1 w-full">
                 <div className="flex items-center gap-2">
@@ -295,7 +324,7 @@ export default function App() {
                 </div>
                 <h3 className="text-2xl font-black tracking-tight mt-1">{selectedCandidate.name}</h3>
                 
-                {/* Micro Aligned Personal Records Grid */}
+                {/* Personal Records Aligned Grid Layout */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3 pt-2 border-t border-dashed border-slate-700/30 text-xs font-medium opacity-90">
                   <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4 text-indigo-500 shrink-0" />
@@ -309,14 +338,28 @@ export default function App() {
                     <MapPin className="h-4 w-4 text-indigo-500 shrink-0" />
                     <span className="truncate">{selectedCandidate.address || '-'}</span>
                   </div>
+                  
+                  {/* Dynamic Clickable Redirect Configurations */}
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1">
                       <Github className="h-3.5 w-3.5 text-indigo-500" />
-                      <span>{selectedCandidate.github_id ? <span className="underline">{selectedCandidate.github_id}</span> : '-'}</span>
+                      {selectedCandidate.github_url ? (
+                        <a href={selectedCandidate.github_url} target="_blank" rel="noreferrer" className="underline text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5">
+                          {selectedCandidate.github_id} <ExternalLink className="h-2.5 w-2.5" />
+                        </a>
+                      ) : (
+                        <span>-</span>
+                      )}
                     </div>
                     <div className="flex items-center gap-1">
                       <Linkedin className="h-3.5 w-3.5 text-indigo-500" />
-                      <span>{selectedCandidate.linkedin_id ? <span className="underline">Profile Linked</span> : '-'}</span>
+                      {selectedCandidate.linkedin_url ? (
+                        <a href={selectedCandidate.linkedin_url} target="_blank" rel="noreferrer" className="underline text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5">
+                          Linked <ExternalLink className="h-2.5 w-2.5" />
+                        </a>
+                      ) : (
+                        <span>-</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -332,10 +375,10 @@ export default function App() {
               </button>
             </div>
 
-            {/* Modal Central Content Space */}
+            {/* Modal Body Container */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               
-              {/* Point-Blank AI Assessment Block */}
+              {/* Easy Bullet-point AI Assessment Block */}
               <div className={`p-5 rounded-xl border flex gap-4 ${isDark ? 'bg-indigo-950/20 border-indigo-500/30' : 'bg-indigo-500/5 border-indigo-500/20'}`}>
                 <Award className="h-6 w-6 text-indigo-500 shrink-0 mt-0.5" />
                 <div className="space-y-2">
@@ -348,9 +391,10 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Dual Tabular Skill Matrix Grid */}
+              {/* Tabular Skill Matrix Split Layout */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Matching Card Block */}
+                
+                {/* Core Matching Matrix Column */}
                 <div className={`rounded-xl border border-collapse overflow-hidden ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                   <div className="bg-emerald-500/10 px-4 py-2.5 border-b border-slate-800 flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500" />
@@ -371,7 +415,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Gaps Card Block */}
+                {/* Missing Gaps Matrix Column */}
                 <div className={`rounded-xl border border-collapse overflow-hidden ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                   <div className="bg-rose-500/10 px-4 py-2.5 border-b border-slate-800 flex items-center gap-2">
                     <ShieldAlert className="h-4 w-4 text-rose-400" />
@@ -399,7 +443,7 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Dynamic Native Resume Viewer Interface Toggle */}
+              {/* Sandbox PDF Stream Container Interface (Fixed Issue 3 - Renders Real File) */}
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <h4 className="font-bold text-sm uppercase tracking-wider opacity-75">Verification Sandbox</h4>
@@ -413,7 +457,7 @@ export default function App() {
                 </div>
 
                 {showPdfViewer ? (
-                  <div className="border border-slate-800 rounded-xl overflow-hidden h-[400px] bg-slate-950">
+                  <div className="border border-slate-800 rounded-xl overflow-hidden h-[460px] bg-slate-950">
                     <iframe 
                       src={`${BACKEND_URL}/api/resume/${selectedCandidate.id}`}
                       className="w-full h-full border-0"
@@ -422,7 +466,7 @@ export default function App() {
                   </div>
                 ) : (
                   <div className={`p-4 rounded-xl text-center border border-dashed text-xs ${isDark ? 'bg-slate-950/20 border-slate-800 opacity-60' : 'bg-slate-100/50 border-slate-300 opacity-70'}`}>
-                    Click standard target view button above to initialize full interactive sandboxed original PDF document viewer.
+                    Click target view button above to initialize full interactive sandboxed original candidate uploaded PDF document document viewer.
                   </div>
                 )}
               </div>
