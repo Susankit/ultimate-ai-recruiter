@@ -12,3 +12,4 @@ backend/recruiter_history.db
 recruiter_history.db
 recruiter_matrix.db
 chroma_vector_db/
+temp_resumes/
