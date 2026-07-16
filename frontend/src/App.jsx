@@ -44,7 +44,7 @@ export default function App() {
       setBackendHealthy(res.data.status === 'healthy');
     } catch {
       setBackendHealthy(false);
-    } fillies {
+    } finally {
       setTimeout(() => setIsRefreshing(false), 800);
     }
   };
